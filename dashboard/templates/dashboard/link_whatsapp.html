@@ -1,0 +1,23 @@
+{% extends 'dashboard/base.html' %}
+
+{% block title %}Link WhatsApp - Expense Tracker{% endblock %}
+
+{% block content %}
+<div class="card" style="max-width: 500px; margin: 100px auto;">
+    <h2 style="margin-bottom: 20px;">Link WhatsApp Number</h2>
+    <p style="color: #666; margin-bottom: 30px;">Enter your WhatsApp number to receive an OTP for verification.</p>
+    
+    <form method="post">
+        {% csrf_token %}
+        
+        <div class="form-group">
+            <label for="whatsapp_number">WhatsApp Number (with country code)</label>
+            <input type="text" id="whatsapp_number" name="whatsapp_number" 
+                   placeholder="+919876543210" value="{{ user.whatsapp_number }}" required>
+            <small style="color: #999;">Example: +919876543210 for India</small>
+        </div>
+        
+        <button type="submit" class="btn btn-primary" style="width: 100%;">Send OTP</button>
+    </form>
+</div>
+{% endblock %}

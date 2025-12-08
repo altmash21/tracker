@@ -1,0 +1,89 @@
+{% extends 'dashboard/base.html' %}
+
+{% block title %}Dashboard - Expense Tracker{% endblock %}
+
+{% block content %}
+{% if not whatsapp_verified %}
+<div class="alert alert-error">
+    ⚠️ Your WhatsApp number is not verified. <a href="{% url 'dashboard:link_whatsapp' %}">Click here to verify</a>
+</div>
+{% endif %}
+
+<h1 style="color: white; margin-bottom: 30px;">Dashboard</h1>
+
+<div class="stats-grid">
+    <div class="stat-card">
+        <h3>Today's Expenses</h3>
+        <div class="amount">{{ user.currency_symbol }}{{ today_total|floatformat:2 }}</div>
+    </div>
+    
+    <div class="stat-card">
+        <h3>This Week</h3>
+        <div class="amount">{{ user.currency_symbol }}{{ week_total|floatformat:2 }}</div>
+    </div>
+    
+    <div class="stat-card">
+        <h3>This Month</h3>
+        <div class="amount">{{ user.currency_symbol }}{{ month_total|floatformat:2 }}</div>
+    </div>
+</div>
+
+<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+    <div class="card">
+        <h2 style="margin-bottom: 20px;">Category Breakdown (This Month)</h2>
+        {% if category_data %}
+        <div style="margin-top: 20px;">
+            {% for item in category_data %}
+            <div style="margin-bottom: 15px;">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+                    <span>{{ item.category__icon }} {{ item.category__name }}</span>
+                    <strong>{{ user.currency_symbol }}{{ item.total|floatformat:2 }}</strong>
+                </div>
+                <div style="background: #f0f0f0; height: 8px; border-radius: 4px; overflow: hidden;">
+                    <div style="background: {{ item.category__color }}; height: 100%; width: {{ item.total|floatformat:0 }}%;"></div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <p style="color: #999; text-align: center; padding: 40px 0;">No expenses recorded yet</p>
+        {% endif %}
+    </div>
+    
+    <div class="card">
+        <h2 style="margin-bottom: 20px;">Recent Expenses</h2>
+        {% if recent_expenses %}
+        <table>
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Category</th>
+                    <th>Amount</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for expense in recent_expenses %}
+                <tr>
+                    <td>{{ expense.date|date:"M d, Y" }}</td>
+                    <td>{{ expense.category.icon }} {{ expense.category.name }}</td>
+                    <td><strong>{{ user.currency_symbol }}{{ expense.amount }}</strong></td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <p style="color: #999; text-align: center; padding: 40px 0;">No expenses recorded yet</p>
+        {% endif %}
+    </div>
+</div>
+
+<div class="card" style="margin-top: 20px;">
+    <h3 style="margin-bottom: 15px;">📱 Quick Start Guide</h3>
+    <ol style="padding-left: 20px; line-height: 1.8;">
+        <li>Send a message to our WhatsApp number to add expenses (e.g., "120 petrol")</li>
+        <li>Type "today" to see today's expenses</li>
+        <li>Type "summary" to see monthly breakdown</li>
+        <li>Type "help" for all available commands</li>
+    </ol>
+</div>
+{% endblock %}

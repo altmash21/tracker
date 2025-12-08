@@ -1,0 +1,28 @@
+{% extends 'dashboard/base.html' %}
+
+{% block title %}Welcome - Expense Tracker{% endblock %}
+
+{% block content %}
+<div class="card text-center" style="margin-top: 100px; max-width: 600px; margin-left: auto; margin-right: auto;">
+    <h1 style="margin-bottom: 20px; color: #667eea;">💰 WhatsApp Expense Tracker</h1>
+    <p style="font-size: 18px; color: #666; margin-bottom: 30px;">
+        Track your expenses effortlessly using WhatsApp and view analytics on the web dashboard.
+    </p>
+    
+    <div style="display: flex; gap: 15px; justify-content: center;">
+        <a href="{% url 'dashboard:login' %}" class="btn btn-primary">Login</a>
+        <a href="{% url 'dashboard:register' %}" class="btn btn-success">Register</a>
+    </div>
+    
+    <div style="margin-top: 40px; text-align: left;">
+        <h3 style="margin-bottom: 15px;">✨ Features:</h3>
+        <ul style="list-style: none; padding: 0;">
+            <li style="padding: 10px 0;">📱 Add expenses via WhatsApp</li>
+            <li style="padding: 10px 0;">📊 View statements in WhatsApp</li>
+            <li style="padding: 10px 0;">💻 Web dashboard with analytics</li>
+            <li style="padding: 10px 0;">📈 Category-wise tracking</li>
+            <li style="padding: 10px 0;">🔒 Secure and encrypted</li>
+        </ul>
+    </div>
+</div>
+{% endblock %}

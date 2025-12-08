@@ -1,0 +1,99 @@
+{% extends 'dashboard/base.html' %}
+
+{% block title %}Expenses - Expense Tracker{% endblock %}
+
+{% block content %}
+<h1 style="color: white; margin-bottom: 30px;">Manage Expenses</h1>
+
+<div class="card">
+    <h2 style="margin-bottom: 20px;">Add New Expense</h2>
+    
+    <form method="post">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="add">
+        
+        <div style="display: grid; grid-template-columns: 1fr 1fr 2fr 1fr auto; gap: 15px; align-items: end;">
+            <div class="form-group" style="margin-bottom: 0;">
+                <label for="amount">Amount</label>
+                <input type="number" id="amount" name="amount" step="0.01" required>
+            </div>
+            
+            <div class="form-group" style="margin-bottom: 0;">
+                <label for="category">Category</label>
+                <select id="category" name="category" required>
+                    <option value="">Select...</option>
+                    {% for cat in categories %}
+                    <option value="{{ cat.id }}">{{ cat.icon }} {{ cat.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <div class="form-group" style="margin-bottom: 0;">
+                <label for="description">Description</label>
+                <input type="text" id="description" name="description">
+            </div>
+            
+            <div class="form-group" style="margin-bottom: 0;">
+                <label for="date">Date</label>
+                <input type="date" id="date" name="date" value="{{ today|date:'Y-m-d' }}" required>
+            </div>
+            
+            <button type="submit" class="btn btn-success">Add</button>
+        </div>
+    </form>
+</div>
+
+<div class="card">
+    <h2 style="margin-bottom: 20px;">Your Expenses</h2>
+    
+    {% if expenses %}
+    <table>
+        <thead>
+            <tr>
+                <th>Date</th>
+                <th>Category</th>
+                <th>Description</th>
+                <th>Amount</th>
+                <th>Source</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for expense in expenses %}
+            <tr>
+                <td>{{ expense.date|date:"M d, Y" }}</td>
+                <td>{{ expense.category.icon }} {{ expense.category.name }}</td>
+                <td>{{ expense.description|default:"-" }}</td>
+                <td><strong>{{ user.currency_symbol }}{{ expense.amount }}</strong></td>
+                <td>
+                    {% if expense.source == 'whatsapp' %}
+                    📱 WhatsApp
+                    {% elif expense.source == 'web' %}
+                    💻 Web
+                    {% else %}
+                    🔌 API
+                    {% endif %}
+                </td>
+                <td>
+                    <form method="post" style="display: inline;">
+                        {% csrf_token %}
+                        <input type="hidden" name="action" value="delete">
+                        <input type="hidden" name="expense_id" value="{{ expense.id }}">
+                        <button type="submit" class="btn btn-danger" 
+                                onclick="return confirm('Delete this expense?')">Delete</button>
+                    </form>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <p style="color: #999; text-align: center; padding: 40px 0;">No expenses found</p>
+    {% endif %}
+</div>
+
+<script>
+    // Set today's date as default
+    document.getElementById('date').valueAsDate = new Date();
+</script>
+{% endblock %}

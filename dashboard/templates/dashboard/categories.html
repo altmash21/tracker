@@ -1,0 +1,79 @@
+{% extends 'dashboard/base.html' %}
+
+{% block title %}Categories - Expense Tracker{% endblock %}
+
+{% block content %}
+<h1 style="color: white; margin-bottom: 30px;">Manage Categories</h1>
+
+<div class="card">
+    <h2 style="margin-bottom: 20px;">Add New Category</h2>
+    
+    <form method="post">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="add">
+        
+        <div style="display: grid; grid-template-columns: 2fr 1fr 1fr auto; gap: 15px; align-items: end;">
+            <div class="form-group" style="margin-bottom: 0;">
+                <label for="name">Category Name</label>
+                <input type="text" id="name" name="name" required>
+            </div>
+            
+            <div class="form-group" style="margin-bottom: 0;">
+                <label for="icon">Icon</label>
+                <input type="text" id="icon" name="icon" value="💰" maxlength="2">
+            </div>
+            
+            <div class="form-group" style="margin-bottom: 0;">
+                <label for="color">Color</label>
+                <input type="color" id="color" name="color" value="#4CAF50">
+            </div>
+            
+            <button type="submit" class="btn btn-success">Add</button>
+        </div>
+    </form>
+</div>
+
+<div class="card">
+    <h2 style="margin-bottom: 20px;">Your Categories</h2>
+    
+    {% if categories %}
+    <table>
+        <thead>
+            <tr>
+                <th>Icon</th>
+                <th>Name</th>
+                <th>Color</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for category in categories %}
+            <tr>
+                <td style="font-size: 24px;">{{ category.icon }}</td>
+                <td>{{ category.name }}</td>
+                <td>
+                    <span style="display: inline-block; width: 30px; height: 30px; background: {{ category.color }}; border-radius: 5px;"></span>
+                    {{ category.color }}
+                </td>
+                <td>
+                    {% if not category.is_default %}
+                    <form method="post" style="display: inline;">
+                        {% csrf_token %}
+                        <input type="hidden" name="action" value="delete">
+                        <input type="hidden" name="category_id" value="{{ category.id }}">
+                        <button type="submit" class="btn btn-danger" 
+                                onclick="return confirm('Delete this category?')">Delete</button>
+                    </form>
+                    {% else %}
+                    <span style="color: #999;">Default</span>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <p style="color: #999; text-align: center; padding: 40px 0;">No categories found</p>
+    {% endif %}
+</div>
+{% endblock %}
