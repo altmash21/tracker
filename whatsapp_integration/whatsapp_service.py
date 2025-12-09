@@ -12,13 +12,32 @@ class WhatsAppService:
         self.api_url = settings.WHATSAPP_API_URL
         self.phone_number_id = settings.WHATSAPP_PHONE_NUMBER_ID
         self.access_token = settings.WHATSAPP_ACCESS_TOKEN
+        
+        # Validate credentials
+        if not self.phone_number_id or not self.access_token:
+            logger.error("WhatsApp credentials are not configured properly")
+        
         self.headers = {
             'Authorization': f'Bearer {self.access_token}',
             'Content-Type': 'application/json',
         }
     
+    def format_phone_number(self, phone):
+        """Format phone number for WhatsApp API (remove +, spaces, dashes)"""
+        if not phone:
+            return None
+        # Remove all non-numeric characters
+        formatted = ''.join(filter(str.isdigit, phone))
+        return formatted
+    
     def send_message(self, to_number, message):
         """Send a text message to a WhatsApp number"""
+        # Format phone number
+        to_number = self.format_phone_number(to_number)
+        if not to_number:
+            logger.error("Invalid phone number provided")
+            return None
+        
         url = f"{self.api_url}/{self.phone_number_id}/messages"
         
         payload = {
@@ -33,12 +52,20 @@ class WhatsAppService:
         }
         
         try:
+            logger.info(f"Sending message to {to_number}...")
             response = requests.post(url, json=payload, headers=self.headers)
-            response.raise_for_status()
-            logger.info(f"Message sent to {to_number}: {message[:50]}...")
-            return response.json()
+            response_data = response.json()
+            
+            if response.status_code == 200:
+                logger.info(f"Message sent successfully to {to_number}")
+                return response_data
+            else:
+                logger.error(f"Failed to send message. Status: {response.status_code}, Response: {response_data}")
+                return None
         except requests.exceptions.RequestException as e:
             logger.error(f"Error sending message to {to_number}: {str(e)}")
+            if hasattr(e, 'response') and e.response is not None:
+                logger.error(f"Response content: {e.response.text}")
             return None
     
     def send_template_message(self, to_number, template_name, language_code='en'):

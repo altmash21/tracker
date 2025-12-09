@@ -144,6 +144,11 @@ def link_whatsapp(request):
     if request.method == 'POST':
         whatsapp_number = request.POST.get('whatsapp_number')
         
+        # Validate phone number
+        if not whatsapp_number:
+            messages.error(request, 'Please enter a WhatsApp number')
+            return render(request, 'dashboard/link_whatsapp.html')
+        
         # Update user's WhatsApp number
         request.user.whatsapp_number = whatsapp_number
         request.user.save()
@@ -153,14 +158,20 @@ def link_whatsapp(request):
         
         # Send OTP via WhatsApp
         whatsapp_service = WhatsAppService()
-        message = f"Your OTP for WhatsApp verification is: {otp}\n\nThis OTP is valid for 10 minutes."
+        message = f"Your OTP for Expense Tracker verification is: {otp}\n\nThis OTP is valid for 10 minutes."
+        
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.info(f"Attempting to send OTP to {whatsapp_number}")
+        
         result = whatsapp_service.send_message(whatsapp_number, message)
         
         if result:
-            messages.success(request, 'OTP sent to your WhatsApp number')
+            messages.success(request, f'OTP sent to {whatsapp_number}. Check your WhatsApp messages.')
             return redirect('dashboard:verify_whatsapp')
         else:
-            messages.error(request, 'Failed to send OTP. Please check your WhatsApp number and try again.')
+            messages.error(request, 'Failed to send OTP. Please ensure: 1) Your number is added as a test user in Meta Dashboard, 2) Number format includes country code (e.g., 919876543210), 3) WhatsApp API credentials are correct.')
+            logger.error(f"Failed to send OTP to {whatsapp_number}")
     
     return render(request, 'dashboard/link_whatsapp.html')
 
