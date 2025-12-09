@@ -58,8 +58,34 @@ def home(request):
 
 
 def register(request):
-    """User registration"""
+    """User registration with WhatsApp OTP verification"""
     if request.method == 'POST':
+        # Check if we're verifying OTP
+        if 'verify_otp' in request.POST:
+            user_id = request.session.get('pending_user_id')
+            otp = request.POST.get('otp')
+            
+            if not user_id:
+                messages.error(request, 'Session expired. Please register again.')
+                return redirect('dashboard:register')
+            
+            try:
+                user = User.objects.get(id=user_id)
+                if user.verify_otp(otp):
+                    # OTP verification sets whatsapp_verified to True
+                    # Clear session
+                    del request.session['pending_user_id']
+                    
+                    messages.success(request, 'Registration successful! Please login.')
+                    return redirect('dashboard:login')
+                else:
+                    messages.error(request, 'Invalid or expired OTP')
+                    return render(request, 'dashboard/verify_otp.html', {'user_id': user_id})
+            except User.DoesNotExist:
+                messages.error(request, 'User not found')
+                return redirect('dashboard:register')
+        
+        # Initial registration
         username = request.POST.get('username')
         email = request.POST.get('email')
         password = request.POST.get('password')
@@ -84,7 +110,8 @@ def register(request):
             username=username,
             email=email,
             password=password,
-            whatsapp_number=whatsapp_number
+            whatsapp_number=whatsapp_number,
+            whatsapp_verified=False
         )
         
         # Create default categories
@@ -108,8 +135,22 @@ def register(request):
                 is_default=True
             )
         
-        messages.success(request, 'Registration successful! Please login.')
-        return redirect('dashboard:login')
+        # Generate and send OTP via WhatsApp
+        otp = user.generate_otp()
+        whatsapp_service = WhatsAppService()
+        message = f"Your OTP for Expense Tracker registration is: {otp}\n\nThis OTP is valid for 10 minutes."
+        
+        result = whatsapp_service.send_message(whatsapp_number, message)
+        
+        if result:
+            # Store user ID in session for OTP verification
+            request.session['pending_user_id'] = user.id
+            messages.success(request, f'OTP sent to {whatsapp_number}. Please check your WhatsApp.')
+            return render(request, 'dashboard/verify_otp.html', {'user_id': user.id})
+        else:
+            messages.error(request, 'Failed to send OTP. Please try again.')
+            user.delete()  # Clean up user if OTP sending failed
+            return render(request, 'dashboard/register.html')
     
     return render(request, 'dashboard/register.html')
 
