@@ -31,7 +31,9 @@ def handle_twilio_webhook(request):
     """Process incoming WhatsApp messages from Twilio"""
     try:
         # Twilio sends data as POST form data, not JSON
-        from_number = request.POST.get('From', '').replace('whatsapp:', '')
+        from_number_raw = request.POST.get('From', '')
+        # Normalize number: remove 'whatsapp:', '+', spaces, leading zeros
+        from_number = from_number_raw.replace('whatsapp:', '').replace('+', '').replace(' ', '').lstrip('0')
         to_number = request.POST.get('To', '')
         body = request.POST.get('Body', '').strip()
         message_sid = request.POST.get('MessageSid', '')
@@ -43,10 +45,22 @@ def handle_twilio_webhook(request):
         
         # Find user by WhatsApp number
         try:
-            mapping = WhatsAppMapping.objects.select_related('user').get(
-                whatsapp_number=from_number,
-                is_active=True
-            )
+            # Try exact match
+            mapping = WhatsAppMapping.objects.select_related('user').filter(is_active=True).filter(
+                whatsapp_number__in=[
+                    from_number,
+                    '+' + from_number,
+                    from_number_raw.replace('whatsapp:', ''),
+                    from_number_raw.replace('whatsapp:', '').replace('+', ''),
+                ]
+            ).first()
+            if not mapping:
+                # Try removing leading country code (e.g., '91' for India)
+                if len(from_number) > 10:
+                    short_number = from_number[-10:]
+                    mapping = WhatsAppMapping.objects.select_related('user').filter(is_active=True, whatsapp_number=short_number).first()
+            if not mapping:
+                raise WhatsAppMapping.DoesNotExist()
             user = mapping.user
         except WhatsAppMapping.DoesNotExist:
             # User not registered
