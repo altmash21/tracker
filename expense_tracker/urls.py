@@ -18,10 +18,12 @@ from django.contrib import admin
 from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
+from whatsapp_integration import views as whatsapp_views
 
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('whatsapp/', include('whatsapp_integration.urls')),
+    path('webhooks/whatsapp/', whatsapp_views.whatsapp_webhook, name='whatsapp_webhook'),
     path('', include('dashboard.urls')),
 ]
 

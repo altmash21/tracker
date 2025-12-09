@@ -16,18 +16,63 @@ logger = logging.getLogger(__name__)
 @require_http_methods(["GET", "POST"])
 def whatsapp_webhook(request):
     """
-    WhatsApp webhook endpoint for receiving messages
-    GET: Webhook verification
+    WhatsApp webhook endpoint for receiving messages from Twilio
+    GET: Webhook verification (not needed for Twilio, but kept for compatibility)
     POST: Message handling
     """
     if request.method == "GET":
-        return verify_webhook(request)
+        # Twilio doesn't require verification, but return OK for testing
+        return HttpResponse('Webhook is active', status=200)
     elif request.method == "POST":
-        return handle_webhook(request)
+        return handle_twilio_webhook(request)
+
+
+def handle_twilio_webhook(request):
+    """Process incoming WhatsApp messages from Twilio"""
+    try:
+        # Twilio sends data as POST form data, not JSON
+        from_number = request.POST.get('From', '').replace('whatsapp:', '')
+        to_number = request.POST.get('To', '')
+        body = request.POST.get('Body', '').strip()
+        message_sid = request.POST.get('MessageSid', '')
+        
+        logger.info(f"Received Twilio webhook - From: {from_number}, Body: {body}")
+        
+        if not body:
+            return HttpResponse('No message body', status=200)
+        
+        # Find user by WhatsApp number
+        try:
+            mapping = WhatsAppMapping.objects.select_related('user').get(
+                whatsapp_number=from_number,
+                is_active=True
+            )
+            user = mapping.user
+        except WhatsAppMapping.DoesNotExist:
+            # User not registered
+            whatsapp_service = WhatsAppService()
+            whatsapp_service.send_message(
+                from_number,
+                "❌ Your WhatsApp number is not registered. Please register at our website first."
+            )
+            return HttpResponse('User not found', status=200)
+        
+        # Process the message
+        response_message = process_user_message(user, body)
+        
+        # Send response
+        whatsapp_service = WhatsAppService()
+        whatsapp_service.send_message(from_number, response_message)
+        
+        return HttpResponse('Message processed', status=200)
+    
+    except Exception as e:
+        logger.error(f"Error processing Twilio webhook: {str(e)}", exc_info=True)
+        return HttpResponse(f'Error: {str(e)}', status=500)
 
 
 def verify_webhook(request):
-    """Verify webhook during setup"""
+    """Verify webhook during setup (Meta API format - kept for backward compatibility)"""
     mode = request.GET.get('hub.mode')
     token = request.GET.get('hub.verify_token')
     challenge = request.GET.get('hub.challenge')
@@ -41,7 +86,7 @@ def verify_webhook(request):
 
 
 def handle_webhook(request):
-    """Process incoming WhatsApp messages"""
+    """Process incoming WhatsApp messages (Meta API format - kept for backward compatibility)"""
     try:
         data = json.loads(request.body.decode('utf-8'))
         logger.info(f"Received webhook data: {json.dumps(data, indent=2)}")
