@@ -1,3 +1,32 @@
+# --- WhatsApp Spend Reminder ---
+from django.conf import settings
+
+@login_required
+def send_spend_reminder(request):
+    """Send WhatsApp reminder to register spend"""
+    whatsapp_number = request.user.whatsapp_number
+    if not whatsapp_number:
+        messages.error(request, 'No WhatsApp number linked to your account.')
+        return redirect('dashboard:dashboard')
+
+    whatsapp_service = WhatsAppService()
+    # Use template message for sandbox, or free-form for production
+    if settings.DEBUG:
+        message = "Please reply with your expense details via WhatsApp. Example: 120 petrol lunch"
+        result = whatsapp_service.send_message(whatsapp_number, message)
+    else:
+        # Replace 'remind_spend' with your approved template name
+        result = whatsapp_service.send_template_message(
+            whatsapp_number,
+            template_name='remind_spend',
+            language_code='en_US'
+        )
+
+    if result:
+        messages.success(request, f'Reminder sent to {whatsapp_number}!')
+    else:
+        messages.error(request, 'Failed to send WhatsApp reminder.')
+    return redirect('dashboard:dashboard')
 from django.shortcuts import render, redirect
 from django.contrib.auth import login, authenticate, logout
 from django.contrib.auth.decorators import login_required
@@ -165,6 +194,12 @@ def link_whatsapp(request):
         logger.info(f"Attempting to send OTP to {whatsapp_number}")
         
         result = whatsapp_service.send_message(whatsapp_number, message)
+        
+        # For development: Show OTP since test accounts can only send template messages
+        if settings.DEBUG:
+            messages.success(request, f'OTP sent to {whatsapp_number}. For testing, your OTP is: {otp}')
+            logger.info(f"Development mode - OTP for {whatsapp_number}: {otp}")
+            return redirect('dashboard:verify_whatsapp')
         
         if result:
             messages.success(request, f'OTP sent to {whatsapp_number}. Check your WhatsApp messages.')

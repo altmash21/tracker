@@ -13,4 +13,5 @@ urlpatterns = [
     path('verify-whatsapp/', views.verify_whatsapp, name='verify_whatsapp'),
     path('categories/', views.categories, name='categories'),
     path('expenses/', views.expenses_list, name='expenses'),
+    path('send-spend-reminder/', views.send_spend_reminder, name='send_spend_reminder'),
 ]

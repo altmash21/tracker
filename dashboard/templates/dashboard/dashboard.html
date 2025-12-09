@@ -3,10 +3,16 @@
 {% block title %}Dashboard - Expense Tracker{% endblock %}
 
 {% block content %}
+
 {% if not whatsapp_verified %}
 <div class="alert alert-error">
     ⚠️ Your WhatsApp number is not verified. <a href="{% url 'dashboard:link_whatsapp' %}">Click here to verify</a>
 </div>
+{% else %}
+<form method="post" action="{% url 'dashboard:send_spend_reminder' %}" style="margin-bottom: 20px;">
+    {% csrf_token %}
+    <button type="submit" class="btn btn-primary">Send WhatsApp Spend Reminder</button>
+</form>
 {% endif %}
 
 <h1 style="color: white; margin-bottom: 30px;">Dashboard</h1>
