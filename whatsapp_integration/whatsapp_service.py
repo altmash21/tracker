@@ -1,34 +1,36 @@
-import requests
 import logging
 from django.conf import settings
+from twilio.rest import Client
+from twilio.base.exceptions import TwilioRestException
 
 logger = logging.getLogger(__name__)
 
 
 class WhatsAppService:
-    """Service for interacting with WhatsApp Business Cloud API"""
+    """Service for interacting with Twilio WhatsApp API"""
     
     def __init__(self):
-        self.api_url = settings.WHATSAPP_API_URL
-        self.phone_number_id = settings.WHATSAPP_PHONE_NUMBER_ID
-        self.access_token = settings.WHATSAPP_ACCESS_TOKEN
+        self.account_sid = settings.TWILIO_ACCOUNT_SID
+        self.auth_token = settings.TWILIO_AUTH_TOKEN
+        self.from_number = settings.TWILIO_WHATSAPP_NUMBER
         
         # Validate credentials
-        if not self.phone_number_id or not self.access_token:
-            logger.error("WhatsApp credentials are not configured properly")
+        if not self.account_sid or not self.auth_token or not self.from_number:
+            logger.error("Twilio credentials are not configured properly")
         
-        self.headers = {
-            'Authorization': f'Bearer {self.access_token}',
-            'Content-Type': 'application/json',
-        }
+        self.client = Client(self.account_sid, self.auth_token)
     
     def format_phone_number(self, phone):
-        """Format phone number for WhatsApp API (remove +, spaces, dashes)"""
+        """Format phone number for WhatsApp API (ensure whatsapp: prefix and + for country code)"""
         if not phone:
             return None
-        # Remove all non-numeric characters
-        formatted = ''.join(filter(str.isdigit, phone))
-        return formatted
+        # Remove all non-numeric characters except +
+        formatted = ''.join(filter(lambda x: x.isdigit() or x == '+', phone))
+        # Add + if not present
+        if not formatted.startswith('+'):
+            formatted = '+' + formatted
+        # Add whatsapp: prefix
+        return f'whatsapp:{formatted}'
     
     def send_message(self, to_number, message):
         """Send a text message to a WhatsApp number"""
@@ -38,51 +40,30 @@ class WhatsAppService:
             logger.error("Invalid phone number provided")
             return None
         
-        url = f"{self.api_url}/{self.phone_number_id}/messages"
-        
-        payload = {
-            "messaging_product": "whatsapp",
-            "recipient_type": "individual",
-            "to": to_number,
-            "type": "text",
-            "text": {
-                "preview_url": False,
-                "body": message
-            }
-        }
-        
         try:
             logger.info(f"Sending message to {to_number}...")
-            response = requests.post(url, json=payload, headers=self.headers)
-            response_data = response.json()
+            message_response = self.client.messages.create(
+                from_=self.from_number,
+                body=message,
+                to=to_number
+            )
             
-            if response.status_code == 200:
-                logger.info(f"Message sent successfully to {to_number}")
-                return response_data
-            else:
-                logger.error(f"Failed to send message. Status: {response.status_code}, Response: {response_data}")
-                return None
-        except requests.exceptions.RequestException as e:
+            logger.info(f"Message sent successfully to {to_number}. SID: {message_response.sid}")
+            return {'sid': message_response.sid, 'status': message_response.status}
+        except TwilioRestException as e:
+            logger.error(f"Twilio error sending message to {to_number}: {e.msg}")
+            logger.error(f"Error code: {e.code}")
+            return None
+        except Exception as e:
             logger.error(f"Error sending message to {to_number}: {str(e)}")
-            if hasattr(e, 'response') and e.response is not None:
-                logger.error(f"Response content: {e.response.text}")
             return None
     
     def send_template_message(self, to_number, template_name, language_code='en'):
-        """Send a template message (for initial outreach)"""
-        url = f"{self.api_url}/{self.phone_number_id}/messages"
-        
-        payload = {
-            "messaging_product": "whatsapp",
-            "to": to_number,
-            "type": "template",
-            "template": {
-                "name": template_name,
-                "language": {
-                    "code": language_code
-                }
-            }
-        }
+        """Send a template message - For Twilio, use content SID"""
+        # Twilio uses Content SID for templates
+        # For now, fall back to regular message
+        logger.warning("Template messages not implemented for Twilio. Sending regular message.")
+        return self.send_message(to_number, f"Template: {template_name}")
         
         try:
             response = requests.post(url, json=payload, headers=self.headers)
