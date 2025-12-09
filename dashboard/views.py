@@ -1,6 +1,16 @@
-# --- WhatsApp Spend Reminder ---
+from django.contrib.auth.decorators import login_required
 from django.conf import settings
+from django.shortcuts import render, redirect
+from django.contrib.auth import login, authenticate, logout
+from django.contrib import messages
+from django.db.models import Sum, Count
+from django.utils import timezone
+from datetime import timedelta
+from users.models import User, WhatsAppMapping
+from expenses.models import Category, Expense
+from whatsapp_integration.whatsapp_service import WhatsAppService
 
+# --- WhatsApp Spend Reminder ---
 @login_required
 def send_spend_reminder(request):
     """Send WhatsApp reminder to register spend"""
@@ -27,9 +37,10 @@ def send_spend_reminder(request):
     else:
         messages.error(request, 'Failed to send WhatsApp reminder.')
     return redirect('dashboard:dashboard')
+
+from django.contrib.auth.decorators import login_required
 from django.shortcuts import render, redirect
 from django.contrib.auth import login, authenticate, logout
-from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.db.models import Sum, Count
 from django.utils import timezone
