@@ -135,22 +135,26 @@ def register(request):
                 is_default=True
             )
         
-        # Generate and send OTP via WhatsApp
+        # Generate OTP
         otp = user.generate_otp()
-        whatsapp_service = WhatsAppService()
-        message = f"Your OTP for Expense Tracker registration is: {otp}\n\nThis OTP is valid for 10 minutes."
-        
-        result = whatsapp_service.send_message(whatsapp_number, message)
-        
-        if result:
-            # Store user ID in session for OTP verification
+        if settings.DEBUG:
+            # In local/dev, show OTP on screen, do not send WhatsApp
             request.session['pending_user_id'] = user.id
-            messages.success(request, f'OTP sent to {whatsapp_number}. Please check your WhatsApp.')
-            return render(request, 'dashboard/verify_otp.html', {'user_id': user.id})
+            messages.success(request, f'Your OTP is: {otp} (for demo only, not sent via WhatsApp)')
+            return render(request, 'dashboard/verify_otp.html', {'user_id': user.id, 'otp': otp})
         else:
-            messages.error(request, 'Failed to send OTP. Please try again.')
-            user.delete()  # Clean up user if OTP sending failed
-            return render(request, 'dashboard/register.html')
+            # In production, send OTP via WhatsApp
+            whatsapp_service = WhatsAppService()
+            message = f"Your OTP for Expense Tracker registration is: {otp}\n\nThis OTP is valid for 10 minutes."
+            result = whatsapp_service.send_message(whatsapp_number, message)
+            if result:
+                request.session['pending_user_id'] = user.id
+                messages.success(request, f'OTP sent to {whatsapp_number}. Please check your WhatsApp.')
+                return render(request, 'dashboard/verify_otp.html', {'user_id': user.id})
+            else:
+                messages.error(request, 'Failed to send OTP. Please try again.')
+                user.delete()  # Clean up user if OTP sending failed
+                return render(request, 'dashboard/register.html')
     
     return render(request, 'dashboard/register.html')
 

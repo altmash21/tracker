@@ -1,28 +1,298 @@
 {% extends 'dashboard/base.html' %}
 
-{% block title %}Welcome - Expense Tracker{% endblock %}
+{% block title %}WhatsApp Expense Tracker - Track Expenses Effortlessly{% endblock %}
+
+{% block extra_css %}
+<style>
+    .hero {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 100px 24px 80px;
+        text-align: center;
+        position: relative;
+    }
+    
+    .hero h1 {
+        font-size: 56px;
+        font-weight: 700;
+        color: #2d3748;
+        margin-bottom: 20px;
+        letter-spacing: -0.03em;
+        line-height: 1.1;
+    }
+    
+    .hero h1 .highlight {
+        background: linear-gradient(135deg, #38b2ac 0%, #4299e1 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }
+    
+    .hero p.subtitle {
+        font-size: 20px;
+        color: #4a5568;
+        margin-bottom: 40px;
+        max-width: 700px;
+        margin-left: auto;
+        margin-right: auto;
+        line-height: 1.6;
+    }
+    
+    .hero-actions {
+        display: flex;
+        gap: 16px;
+        justify-content: center;
+        margin-bottom: 60px;
+        flex-wrap: wrap;
+    }
+    
+    .hero-actions .btn {
+        padding: 14px 32px;
+        font-size: 15px;
+        font-weight: 600;
+    }
+    
+    .btn-secondary {
+        background: #e2e8f0;
+        color: #2d3748;
+    }
+    
+    .btn-secondary:hover {
+        background: #cbd5e1;
+    }
+    
+    .features {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 60px 24px;
+        background: white;
+    }
+    
+    .features h2 {
+        font-size: 32px;
+        font-weight: 600;
+        color: #2d3748;
+        text-align: center;
+        margin-bottom: 48px;
+        letter-spacing: -0.02em;
+    }
+    
+    .features-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        gap: 32px;
+    }
+    
+    .feature-card {
+        padding: 24px;
+        border-radius: 8px;
+        background: #f7fafc;
+        border: 1px solid #e2e8f0;
+    }
+    
+    .feature-icon {
+        font-size: 32px;
+        margin-bottom: 16px;
+        display: block;
+        color: #4299e1;
+    }
+    
+    .feature-card h3 {
+        font-size: 16px;
+        font-weight: 600;
+        color: #2d3748;
+        margin-bottom: 8px;
+    }
+    
+    .feature-card p {
+        font-size: 13px;
+        color: #4a5568;
+        line-height: 1.6;
+    }
+    
+    .how-it-works {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 60px 24px;
+    }
+    
+    .how-it-works h2 {
+        font-size: 32px;
+        font-weight: 600;
+        color: #2d3748;
+        text-align: center;
+        margin-bottom: 48px;
+        letter-spacing: -0.02em;
+    }
+    
+    .steps {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 32px;
+    }
+    
+    .step {
+        text-align: center;
+    }
+    
+    .step-number {
+        width: 40px;
+        height: 40px;
+        background: #4299e1;
+        color: white;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 16px;
+        font-weight: 600;
+        font-size: 16px;
+    }
+    
+    .step h3 {
+        font-size: 16px;
+        font-weight: 600;
+        color: #2d3748;
+        margin-bottom: 8px;
+    }
+    
+    .step p {
+        font-size: 13px;
+        color: #4a5568;
+        line-height: 1.6;
+    }
+    
+    .cta {
+        max-width: 800px;
+        margin: 60px auto;
+        padding: 48px 24px;
+        text-align: center;
+        background: white;
+        border-radius: 12px;
+        border: 1px solid #e2e8f0;
+    }
+    
+    .cta h2 {
+        font-size: 28px;
+        font-weight: 600;
+        color: #2d3748;
+        margin-bottom: 16px;
+        letter-spacing: -0.02em;
+    }
+    
+    .cta p {
+        font-size: 15px;
+        color: #4a5568;
+        margin-bottom: 32px;
+    }
+    
+    @media (max-width: 768px) {
+        .hero h1 {
+            font-size: 36px;
+        }
+        
+        .hero p.subtitle {
+            font-size: 16px;
+        }
+        
+        .features h2 {
+            font-size: 28px;
+        }
+        
+        .cta h2 {
+            font-size: 28px;
+        }
+    }
+</style>
+{% endblock %}
 
 {% block content %}
-<div class="card text-center" style="margin-top: 100px; max-width: 600px; margin-left: auto; margin-right: auto;">
-    <h1 style="margin-bottom: 20px; color: #667eea;">💰 WhatsApp Expense Tracker</h1>
-    <p style="font-size: 18px; color: #666; margin-bottom: 30px;">
-        Track your expenses effortlessly using WhatsApp and view analytics on the web dashboard.
-    </p>
-    
-    <div style="display: flex; gap: 15px; justify-content: center;">
-        <a href="{% url 'dashboard:login' %}" class="btn btn-primary">Login</a>
-        <a href="{% url 'dashboard:register' %}" class="btn btn-success">Register</a>
+<nav class="navbar" style="background: white; border-bottom: 1px solid #e2e8f0; box-shadow: 0 1px 2px rgba(0,0,0,0.04);">
+    <div class="navbar-inner" style="max-width: 1200px; margin: 0 auto; padding: 0 24px; display: flex; justify-content: space-between; align-items: center;">
+        <a href="/" class="navbar-brand" style="font-size: 20px; font-weight: 700; color: #2d3748; text-decoration: none;">Expense Tracker</a>
+        <div class="navbar-menu" style="display: flex; gap: 20px; align-items: center;">
+            <a href="{% url 'dashboard:login' %}" style="color: #4299e1; font-weight: 500;">Login</a>
+            <a href="{% url 'dashboard:register' %}" style="color: #38b2ac; font-weight: 500;">Register</a>
+        </div>
     </div>
-    
-    <div style="margin-top: 40px; text-align: left;">
-        <h3 style="margin-bottom: 15px;">✨ Features:</h3>
-        <ul style="list-style: none; padding: 0;">
-            <li style="padding: 10px 0;">📱 Add expenses via WhatsApp</li>
-            <li style="padding: 10px 0;">📊 View statements in WhatsApp</li>
-            <li style="padding: 10px 0;">💻 Web dashboard with analytics</li>
-            <li style="padding: 10px 0;">📈 Category-wise tracking</li>
-            <li style="padding: 10px 0;">🔒 Secure and encrypted</li>
-        </ul>
+</nav>
+
+<div class="hero">
+    <h1>Track Expenses via <span class="highlight">WhatsApp</span></h1>
+    <p class="subtitle">The simplest way to manage your finances. Add expenses through WhatsApp and view detailed analytics on your dashboard.</p>
+    <div class="hero-actions">
+        <a href="{% url 'dashboard:register' %}" class="btn btn-primary">Get Started</a>
+        <a href="{% url 'dashboard:login' %}" class="btn btn-secondary">Login</a>
     </div>
 </div>
+
+<div class="features">
+    <h2>Everything you need to manage expenses</h2>
+    <div class="features-grid">
+        <div class="feature-card">
+            <span class="feature-icon">📱</span>
+            <h3>WhatsApp Integration</h3>
+            <p>Add expenses instantly via WhatsApp. No need to open an app or website.</p>
+        </div>
+        <div class="feature-card">
+            <span class="feature-icon">📊</span>
+            <h3>Real-time Analytics</h3>
+            <p>View spending patterns, category breakdowns, and monthly trends at a glance.</p>
+        </div>
+        <div class="feature-card">
+            <span class="feature-icon">🏷️</span>
+            <h3>Smart Categories</h3>
+            <p>Automatically categorize expenses or create custom categories that fit your needs.</p>
+        </div>
+        <div class="feature-card">
+            <span class="feature-icon">💬</span>
+            <h3>Instant Statements</h3>
+            <p>Request daily, weekly, or monthly statements directly in WhatsApp.</p>
+        </div>
+        <div class="feature-card">
+            <span class="feature-icon">🔒</span>
+            <h3>Secure & Private</h3>
+            <p>Your financial data is encrypted and stored securely. We never share your information.</p>
+        </div>
+        <div class="feature-card">
+            <span class="feature-icon">⚡</span>
+            <h3>Lightning Fast</h3>
+            <p>Record expenses in seconds. The fastest way to track your spending.</p>
+        </div>
+    </div>
+</div>
+
+<div class="how-it-works">
+    <h2>How it works</h2>
+    <div class="steps">
+        <div class="step">
+            <div class="step-number">1</div>
+            <h3>Register</h3>
+            <p>Sign up with your WhatsApp number and verify your account.</p>
+        </div>
+        <div class="step">
+            <div class="step-number">2</div>
+            <h3>Add Expenses</h3>
+            <p>Send a message like "120 food lunch" to record an expense.</p>
+        </div>
+        <div class="step">
+            <div class="step-number">3</div>
+            <h3>Track & Analyze</h3>
+            <p>View detailed analytics and insights on your web dashboard.</p>
+        </div>
+    </div>
+</div>
+
+<div class="cta">
+    <h2>Ready to take control of your finances?</h2>
+    <p>Join thousands of users tracking their expenses effortlessly.</p>
+    <a href="{% url 'dashboard:register' %}" class="btn btn-primary" style="padding: 12px 32px;">Get Started</a>
+</div>
+
+<footer style="background: #23272f; color: #fff; padding: 32px 0; margin-top: 60px;">
+    <div style="max-width: 1200px; margin: 0 auto; padding: 0 24px; display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center;">
+        <div style="font-size: 15px; font-weight: 500;">Expense Tracker &copy; {{ now|date:'Y' }}. All rights reserved.</div>
+        <div style="font-size: 13px; color: #b3b3b3;">Made for modern finance. Privacy-first. Secure by design.</div>
+    </div>
+</footer>
 {% endblock %}

@@ -13,9 +13,10 @@
         
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: #f8f9fa;
             min-height: 100vh;
-            padding: 20px;
+            padding: 0;
+            color: #1a1a1a;
         }
         
         .container {
@@ -24,21 +25,28 @@
         }
         
         .navbar {
-            background: rgba(255, 255, 255, 0.95);
-            padding: 15px 30px;
-            border-radius: 10px;
-            margin-bottom: 30px;
+            background: white;
+            padding: 12px 0;
+            margin-bottom: 0;
+            border-bottom: 1px solid #e5e7eb;
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+        }
+        
+        .navbar-inner {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 24px;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
         }
         
         .navbar-brand {
-            font-size: 24px;
-            font-weight: bold;
-            color: #667eea;
+            font-size: 18px;
+            font-weight: 600;
+            color: #1a1a1a;
             text-decoration: none;
+            letter-spacing: -0.02em;
         }
         
         .navbar-menu {
@@ -48,57 +56,69 @@
         }
         
         .navbar-menu a, .navbar-menu button {
-            color: #333;
+            color: #6b7280;
             text-decoration: none;
-            padding: 8px 16px;
-            border-radius: 5px;
-            transition: all 0.3s;
+            padding: 6px 12px;
+            border-radius: 6px;
+            transition: all 0.2s;
             background: none;
             border: none;
             cursor: pointer;
-            font-size: 14px;
+            font-size: 13px;
+            font-weight: 500;
         }
         
         .navbar-menu a:hover, .navbar-menu button:hover {
-            background: #f0f0f0;
+            background: #f3f4f6;
+            color: #1a1a1a;
         }
         
         .btn {
-            padding: 10px 20px;
+            padding: 8px 16px;
             border: none;
-            border-radius: 5px;
+            border-radius: 6px;
             cursor: pointer;
-            font-size: 14px;
-            transition: all 0.3s;
+            font-size: 13px;
+            font-weight: 500;
+            transition: all 0.2s;
             text-decoration: none;
             display: inline-block;
         }
         
         .btn-primary {
-            background: #667eea;
+            background: #1a1a1a;
             color: white;
         }
         
         .btn-primary:hover {
-            background: #5568d3;
+            background: #000000;
         }
         
         .btn-success {
-            background: #4CAF50;
+            background: #10b981;
             color: white;
         }
         
+        .btn-success:hover {
+            background: #059669;
+        }
+        
         .btn-danger {
-            background: #f44336;
+            background: #ef4444;
             color: white;
+        }
+        
+        .btn-danger:hover {
+            background: #dc2626;
         }
         
         .card {
             background: white;
-            border-radius: 10px;
-            padding: 30px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-            margin-bottom: 20px;
+            border-radius: 8px;
+            padding: 24px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            margin-bottom: 16px;
+            border: 1px solid #e5e7eb;
         }
         
         .messages {
@@ -135,15 +155,17 @@
         
         .form-group input, .form-group select, .form-group textarea {
             width: 100%;
-            padding: 10px;
-            border: 1px solid #ddd;
-            border-radius: 5px;
-            font-size: 14px;
+            padding: 8px 12px;
+            border: 1px solid #e5e7eb;
+            border-radius: 6px;
+            font-size: 13px;
+            transition: all 0.2s;
         }
         
         .form-group input:focus, .form-group select:focus {
             outline: none;
-            border-color: #667eea;
+            border-color: #1a1a1a;
+            box-shadow: 0 0 0 3px rgba(26, 26, 26, 0.1);
         }
         
         table {
@@ -153,14 +175,19 @@
         }
         
         table th, table td {
-            padding: 12px;
+            padding: 10px 12px;
             text-align: left;
-            border-bottom: 1px solid #ddd;
+            border-bottom: 1px solid #e5e7eb;
+            font-size: 13px;
         }
         
         table th {
-            background: #f8f9fa;
+            background: #f9fafb;
             font-weight: 600;
+            color: #6b7280;
+            text-transform: uppercase;
+            font-size: 11px;
+            letter-spacing: 0.05em;
         }
         
         .stats-grid {
@@ -172,21 +199,26 @@
         
         .stat-card {
             background: white;
-            padding: 25px;
-            border-radius: 10px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            border: 1px solid #e5e7eb;
         }
         
         .stat-card h3 {
-            font-size: 14px;
-            color: #666;
-            margin-bottom: 10px;
+            font-size: 11px;
+            color: #6b7280;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            font-weight: 600;
         }
         
         .stat-card .amount {
-            font-size: 32px;
-            font-weight: bold;
-            color: #333;
+            font-size: 28px;
+            font-weight: 600;
+            color: #1a1a1a;
+            letter-spacing: -0.02em;
         }
         
         .text-center {
@@ -200,26 +232,28 @@
     {% block extra_css %}{% endblock %}
 </head>
 <body>
-    <div class="container">
-        {% if user.is_authenticated %}
-        <nav class="navbar">
-            <a href="{% url 'dashboard:dashboard' %}" class="navbar-brand">💰 Expense Tracker</a>
+    {% if user.is_authenticated %}
+    <nav class="navbar">
+        <div class="navbar-inner">
+            <a href="{% url 'dashboard:dashboard' %}" class="navbar-brand">Expense Tracker</a>
             <div class="navbar-menu">
                 <a href="{% url 'dashboard:dashboard' %}">Dashboard</a>
                 <a href="{% url 'dashboard:expenses' %}">Expenses</a>
                 <a href="{% url 'dashboard:categories' %}">Categories</a>
                 {% if not user.whatsapp_verified %}
-                <a href="{% url 'dashboard:link_whatsapp' %}" style="color: #f44336;">Link WhatsApp</a>
+                <a href="{% url 'dashboard:link_whatsapp' %}" style="color: #ef4444;">Link WhatsApp</a>
                 {% endif %}
-                <span>{{ user.username }}</span>
+                <span style="color: #6b7280; padding: 6px 12px; font-size: 13px;">{{ user.username }}</span>
                 <form method="post" action="{% url 'dashboard:logout' %}" style="display: inline;">
                     {% csrf_token %}
                     <button type="submit">Logout</button>
                 </form>
             </div>
-        </nav>
-        {% endif %}
-        
+        </div>
+    </nav>
+    {% endif %}
+    
+    <div class="container" style="max-width: 1200px; margin: 0 auto; padding: 24px;">
         {% if messages %}
         <div class="messages">
             {% for message in messages %}
