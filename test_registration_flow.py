@@ -1,5 +1,5 @@
 """
-Test complete registration flow with OTP
+Test complete registration flow with OTP via Meta WhatsApp API
 """
 import os
 import sys
@@ -14,7 +14,7 @@ from users.models import User
 from whatsapp_integration.whatsapp_service import WhatsAppService
 
 print("="*60)
-print("Testing Complete Registration Flow")
+print("Testing Complete Registration Flow (Meta WhatsApp API)")
 print("="*60)
 
 # Simulate user registration
@@ -50,7 +50,7 @@ result = ws.send_message(test_phone, message)
 
 if result:
     print(f"   ✓ WhatsApp message sent successfully!")
-    print(f"   ✓ Message SID: {result.get('sid')}")
+    print(f"   ✓ Message ID: {result.get('id')}")
     print(f"   ✓ Status: {result.get('status')}")
 else:
     print(f"   ✗ Failed to send WhatsApp message")
@@ -61,7 +61,7 @@ print(f"   Testing with correct OTP: {otp}")
 is_valid = user.verify_otp(otp)
 if is_valid:
     print(f"   ✓ OTP verification successful!")
-    print(f"   ✓ User marked as verified (verify_otp does this automatically)")
+    print(f"   ✓ User marked as verified")
 else:
     print(f"   ✗ OTP verification failed")
 
@@ -70,15 +70,16 @@ print("Summary:")
 print("="*60)
 print(f"✓ User creation: SUCCESS")
 print(f"✓ OTP generation: SUCCESS")
-print(f"✓ WhatsApp message: {'SUCCESS' if result else 'FAILED'}")
+print(f"✓ WhatsApp message (Meta API): {'SUCCESS' if result else 'FAILED'}")
 print(f"✓ OTP verification: {'SUCCESS' if is_valid else 'FAILED'}")
 print("="*60)
 print("\nRegistration flow is working correctly!")
 print("Note: Check your WhatsApp to see if you received the OTP.")
-print("If not, make sure you've joined the Twilio sandbox.")
+print("If not, make sure your WhatsApp Business Account is properly configured.")
 print("="*60)
 
 # Cleanup
 print("\nCleaning up test user...")
 user.delete()
 print("✓ Test complete!")
+

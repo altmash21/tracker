@@ -16,77 +16,18 @@ logger = logging.getLogger(__name__)
 @require_http_methods(["GET", "POST"])
 def whatsapp_webhook(request):
     """
-    WhatsApp webhook endpoint for receiving messages from Twilio
-    GET: Webhook verification (not needed for Twilio, but kept for compatibility)
+    WhatsApp webhook endpoint for receiving messages from Meta Cloud API
+    GET: Webhook verification
     POST: Message handling
     """
     if request.method == "GET":
-        # Twilio doesn't require verification, but return OK for testing
-        return HttpResponse('Webhook is active', status=200)
+        return verify_webhook(request)
     elif request.method == "POST":
-        return handle_twilio_webhook(request)
-
-
-def handle_twilio_webhook(request):
-    """Process incoming WhatsApp messages from Twilio"""
-    try:
-        # Twilio sends data as POST form data, not JSON
-        from_number_raw = request.POST.get('From', '')
-        # Normalize number: remove 'whatsapp:', '+', spaces, leading zeros
-        from_number = from_number_raw.replace('whatsapp:', '').replace('+', '').replace(' ', '').lstrip('0')
-        to_number = request.POST.get('To', '')
-        body = request.POST.get('Body', '').strip()
-        message_sid = request.POST.get('MessageSid', '')
-        
-        logger.info(f"Received Twilio webhook - From: {from_number}, Body: {body}")
-        
-        if not body:
-            return HttpResponse('No message body', status=200)
-        
-        # Find user by WhatsApp number
-        try:
-            # Try exact match
-            mapping = WhatsAppMapping.objects.select_related('user').filter(is_active=True).filter(
-                whatsapp_number__in=[
-                    from_number,
-                    '+' + from_number,
-                    from_number_raw.replace('whatsapp:', ''),
-                    from_number_raw.replace('whatsapp:', '').replace('+', ''),
-                ]
-            ).first()
-            if not mapping:
-                # Try removing leading country code (e.g., '91' for India)
-                if len(from_number) > 10:
-                    short_number = from_number[-10:]
-                    mapping = WhatsAppMapping.objects.select_related('user').filter(is_active=True, whatsapp_number=short_number).first()
-            if not mapping:
-                raise WhatsAppMapping.DoesNotExist()
-            user = mapping.user
-        except WhatsAppMapping.DoesNotExist:
-            # User not registered
-            whatsapp_service = WhatsAppService()
-            whatsapp_service.send_message(
-                from_number,
-                "❌ Your WhatsApp number is not registered. Please register at our website first."
-            )
-            return HttpResponse('User not found', status=200)
-        
-        # Process the message
-        response_message = process_user_message(user, body)
-        
-        # Send response
-        whatsapp_service = WhatsAppService()
-        whatsapp_service.send_message(from_number, response_message)
-        
-        return HttpResponse('Message processed', status=200)
-    
-    except Exception as e:
-        logger.error(f"Error processing Twilio webhook: {str(e)}", exc_info=True)
-        return HttpResponse(f'Error: {str(e)}', status=500)
+        return handle_webhook(request)
 
 
 def verify_webhook(request):
-    """Verify webhook during setup (Meta API format - kept for backward compatibility)"""
+    """Verify webhook during setup (Meta API format)"""
     mode = request.GET.get('hub.mode')
     token = request.GET.get('hub.verify_token')
     challenge = request.GET.get('hub.challenge')
@@ -100,8 +41,14 @@ def verify_webhook(request):
 
 
 def handle_webhook(request):
-    """Process incoming WhatsApp messages (Meta API format - kept for backward compatibility)"""
+    """Process incoming WhatsApp messages (Meta Cloud API format)"""
     try:
+        # Verify webhook signature for security
+        whatsapp_service = WhatsAppService()
+        if not whatsapp_service.verify_webhook_signature(request):
+            logger.warning("Webhook signature verification failed")
+            return HttpResponse('Signature verification failed', status=403)
+        
         data = json.loads(request.body.decode('utf-8'))
         logger.info(f"Received webhook data: {json.dumps(data, indent=2)}")
         
@@ -146,10 +93,17 @@ def process_message(message, value):
         
         # Find user by WhatsApp number
         try:
-            mapping = WhatsAppMapping.objects.select_related('user').get(
-                whatsapp_number=from_number,
+            # Normalize phone number for matching
+            normalized_number = from_number.lstrip('0')
+            mapping = WhatsAppMapping.objects.select_related('user').filter(
                 is_active=True
-            )
+            ).filter(
+                whatsapp_number__in=[from_number, normalized_number]
+            ).first()
+            
+            if not mapping:
+                raise WhatsAppMapping.DoesNotExist()
+            
             user = mapping.user
         except WhatsAppMapping.DoesNotExist:
             # User not registered
