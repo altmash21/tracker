@@ -58,62 +58,36 @@ def home(request):
 
 
 def register(request):
-    """User registration with WhatsApp OTP verification"""
+    """User registration without OTP or WhatsApp verification"""
     if request.method == 'POST':
-        # Check if we're verifying OTP
-        if 'verify_otp' in request.POST:
-            user_id = request.session.get('pending_user_id')
-            otp = request.POST.get('otp')
-            
-            if not user_id:
-                messages.error(request, 'Session expired. Please register again.')
-                return redirect('dashboard:register')
-            
-            try:
-                user = User.objects.get(id=user_id)
-                if user.verify_otp(otp):
-                    # OTP verification sets whatsapp_verified to True
-                    # Clear session
-                    del request.session['pending_user_id']
-                    
-                    messages.success(request, 'Registration successful! Please login.')
-                    return redirect('dashboard:login')
-                else:
-                    messages.error(request, 'Invalid or expired OTP')
-                    return render(request, 'dashboard/verify_otp.html', {'user_id': user_id})
-            except User.DoesNotExist:
-                messages.error(request, 'User not found')
-                return redirect('dashboard:register')
-        
-        # Initial registration
         username = request.POST.get('username')
         email = request.POST.get('email')
         password = request.POST.get('password')
         password2 = request.POST.get('password2')
         whatsapp_number = request.POST.get('whatsapp_number')
-        
+
         # Validation
         if password != password2:
             messages.error(request, 'Passwords do not match')
             return render(request, 'dashboard/register.html')
-        
+
         if User.objects.filter(username=username).exists():
             messages.error(request, 'Username already exists')
             return render(request, 'dashboard/register.html')
-        
+
         if User.objects.filter(email=email).exists():
             messages.error(request, 'Email already exists')
             return render(request, 'dashboard/register.html')
-        
+
         # Create user
         user = User.objects.create_user(
             username=username,
             email=email,
             password=password,
             whatsapp_number=whatsapp_number,
-            whatsapp_verified=False
+            whatsapp_verified=True
         )
-        
+
         # Create default categories
         default_categories = [
             ('Food', '🍔', '#FF6B6B'),
@@ -125,7 +99,7 @@ def register(request):
             ('Groceries', '🛒', '#A8D8EA'),
             ('Education', '📚', '#FFDEB4'),
         ]
-        
+
         for name, icon, color in default_categories:
             Category.objects.create(
                 user=user,
@@ -134,28 +108,10 @@ def register(request):
                 color=color,
                 is_default=True
             )
-        
-        # Generate OTP
-        otp = user.generate_otp()
-        if settings.DEBUG:
-            # In local/dev, show OTP on screen, do not send WhatsApp
-            request.session['pending_user_id'] = user.id
-            messages.success(request, f'Your OTP is: {otp} (for demo only, not sent via WhatsApp)')
-            return render(request, 'dashboard/verify_otp.html', {'user_id': user.id, 'otp': otp})
-        else:
-            # In production, send OTP via WhatsApp
-            whatsapp_service = WhatsAppService()
-            message = f"Your OTP for Expense Tracker registration is: {otp}\n\nThis OTP is valid for 10 minutes."
-            result = whatsapp_service.send_message(whatsapp_number, message)
-            if result:
-                request.session['pending_user_id'] = user.id
-                messages.success(request, f'OTP sent to {whatsapp_number}. Please check your WhatsApp.')
-                return render(request, 'dashboard/verify_otp.html', {'user_id': user.id})
-            else:
-                messages.error(request, 'Failed to send OTP. Please try again.')
-                user.delete()  # Clean up user if OTP sending failed
-                return render(request, 'dashboard/register.html')
-    
+
+        messages.success(request, 'Registration successful! Please login.')
+        return redirect('dashboard:login')
+
     return render(request, 'dashboard/register.html')
 
 
