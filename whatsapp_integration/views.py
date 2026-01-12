@@ -1,254 +1,507 @@
 import json
 import logging
+import os
+
+from django.conf import settings
 from django.http import JsonResponse, HttpResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_http_methods
-from django.conf import settings
-from users.models import User, WhatsAppMapping
+
+from users.models import WhatsAppMapping
 from expenses.models import Expense
 from .whatsapp_service import WhatsAppService
 from .expense_handler import ExpenseParser, StatementGenerator
 
-logger = logging.getLogger(__name__)
+
+# -------------------------------------------------------------------
+# LOGGER (IMPORTANT: must match LOGGING config in settings.py)
+# -------------------------------------------------------------------
+logger = logging.getLogger("whatsapp")
 
 
+# -------------------------------------------------------------------
+# MAIN WEBHOOK ENDPOINT
+# -------------------------------------------------------------------
 @csrf_exempt
 @require_http_methods(["GET", "POST"])
 def whatsapp_webhook(request):
     """
-    WhatsApp webhook endpoint for receiving messages from Meta Cloud API
-    GET: Webhook verification
-    POST: Message handling
+    WhatsApp Cloud API webhook
+    GET  -> Verification
+    POST -> Incoming messages
     """
-    # CRITICAL: Log IMMEDIATELY when request arrives
-    logger.info(f"========== WEBHOOK REQUEST RECEIVED ==========")
-    logger.info(f"Method: {request.method}")
-    logger.info(f"Path: {request.path}")
-    logger.info(f"Headers: {dict(request.META)}")
-    
+
+    # Log immediately when request hits Django
+    logger.info("========== WHATSAPP WEBHOOK HIT ==========")
+    logger.info("Method: %s", request.method)
+    logger.info("Path: %s", request.path)
+
     if request.method == "GET":
         return verify_webhook(request)
-    elif request.method == "POST":
-        return handle_webhook(request)
+
+    return handle_webhook(request)
 
 
-@csrf_exempt
-def webhook_test(request):
-    """Test endpoint to verify Django routing is working"""
-    logger.info("========== TEST ENDPOINT HIT ==========")
-    logger.info(f"Method: {request.method}")
-    logger.info(f"Path: {request.path}")
-    return JsonResponse({
-        'status': 'success',
-        'message': 'Django routing is working correctly',
-        'method': request.method,
-        'path': request.path
-    })
-
-
+# -------------------------------------------------------------------
+# WEBHOOK VERIFICATION (META)
+# -------------------------------------------------------------------
 def verify_webhook(request):
-    """Verify webhook during setup (Meta API format)"""
-    mode = request.GET.get('hub.mode')
-    token = request.GET.get('hub.verify_token')
-    challenge = request.GET.get('hub.challenge')
-    
-    if mode == 'subscribe' and token == settings.WHATSAPP_VERIFY_TOKEN:
-        logger.info("Webhook verified successfully")
-        return HttpResponse(challenge, content_type='text/plain')
-    else:
-        logger.warning("Webhook verification failed")
-        return HttpResponse('Verification failed', status=403)
+    """
+    Meta webhook verification
+    """
+    mode = request.GET.get("hub.mode")
+    token = request.GET.get("hub.verify_token")
+    challenge = request.GET.get("hub.challenge")
+
+    logger.info("Webhook verification request received")
+
+    if mode == "subscribe" and token == settings.WHATSAPP_VERIFY_TOKEN:
+        logger.info("Webhook verification SUCCESS")
+        return HttpResponse(challenge, content_type="text/plain")
+
+    logger.warning("Webhook verification FAILED")
+    return HttpResponse("Verification failed", status=403)
 
 
+# -------------------------------------------------------------------
+# HANDLE INCOMING WEBHOOK (POST)
+# -------------------------------------------------------------------
 def handle_webhook(request):
-    """Process incoming WhatsApp messages (Meta Cloud API format)"""
+    """
+    Handle incoming WhatsApp messages
+    """
     try:
-        # Log raw request body BEFORE any processing
-        logger.info(f"Raw request body: {request.body.decode('utf-8')}")
-        
-        # TEMPORARILY DISABLED: Signature verification to diagnose webhook issue
-        # TODO: Re-enable after confirming webhooks work
-        # whatsapp_service = WhatsAppService()
-        # if not whatsapp_service.verify_webhook_signature(request):
-        #     logger.warning("Webhook signature verification failed")
-        #     return HttpResponse('Signature verification failed', status=403)
-        
-        logger.info("Signature verification SKIPPED (temporarily disabled)")
-        
-        data = json.loads(request.body.decode('utf-8'))
-        logger.info(f"Received webhook data: {json.dumps(data, indent=2)}")
-        
-        # Extract message data
-        if 'entry' not in data:
-            return JsonResponse({'status': 'no_entry'}, status=200)  # Always return 200 to Meta
-        
-        for entry in data['entry']:
-            for change in entry.get('changes', []):
-                value = change.get('value', {})
-                
-                # Process messages
-                if 'messages' in value:
-                    for message in value['messages']:
-                        process_message(message, value)
-        
-        # CRITICAL: Return 200 immediately to prevent Meta from retrying
-        return JsonResponse({'status': 'success'}, status=200)
-    
-    except json.JSONDecodeError as e:
-        logger.error(f"Invalid JSON in webhook: {str(e)}")
-        return JsonResponse({'status': 'invalid_json'}, status=200)  # Still return 200
-    
+        body = request.body.decode("utf-8")
+        logger.info("Raw webhook body: %s", body)
+
+        # ------------------------------------------------------------
+        # OPTIONAL: Signature verification (ENABLE IN PRODUCTION)
+        # ------------------------------------------------------------
+        # if not settings.DEBUG:
+        #     service = WhatsAppService()
+        #     if not service.verify_webhook_signature(request):
+        #         logger.warning("Invalid webhook signature")
+        #         return JsonResponse({"status": "invalid_signature"}, status=200)
+
+        data = json.loads(body)
+
+        # Meta sometimes sends events without messages
+        if "entry" not in data:
+            logger.info("No entry in webhook payload")
+            return JsonResponse({"status": "no_entry"}, status=200)
+
+        for entry in data["entry"]:
+            for change in entry.get("changes", []):
+                value = change.get("value", {})
+
+                messages = value.get("messages", [])
+                for message in messages:
+                    process_message(message)
+
+        return JsonResponse({"status": "success"}, status=200)
+
+    except json.JSONDecodeError:
+        logger.error("Invalid JSON payload")
+        return JsonResponse({"status": "invalid_json"}, status=200)
+
     except Exception as e:
-        logger.error(f"Error processing webhook: {str(e)}", exc_info=True)
-        # Return 200 even on error to prevent Meta retries
-        return JsonResponse({'status': 'error', 'message': str(e)}, status=200)
+        logger.exception("Unhandled webhook error")
+        return JsonResponse({"status": "error"}, status=200)
 
 
-def process_message(message, value):
-    """Process individual WhatsApp message"""
+# -------------------------------------------------------------------
+# PROCESS INDIVIDUAL MESSAGE
+# -------------------------------------------------------------------
+def process_message(message):
+    """
+    Process a single WhatsApp message
+    """
     try:
-        message_type = message.get('type')
-        from_number = message.get('from')
-        message_id = message.get('id')
-        
-        # Only process text messages
-        if message_type != 'text':
-            logger.info(f"Ignoring non-text message type: {message_type}")
+        message_type = message.get("type")
+        from_number = message.get("from")
+        message_id = message.get("id")
+
+        logger.info("Incoming message from %s | type=%s", from_number, message_type)
+
+        # Only text messages supported
+        if message_type != "text":
+            logger.info("Ignoring non-text message")
             return
-        
-        text = message.get('text', {}).get('body', '').strip()
-        
+
+        text = message.get("text", {}).get("body", "").strip()
         if not text:
             return
-        
-        logger.info(f"Processing message from {from_number}: {text}")
-        
-        # Find user by WhatsApp number
-        try:
-            # Normalize phone number for matching
-            normalized_number = from_number.lstrip('0')
-            mapping = WhatsAppMapping.objects.select_related('user').filter(
-                is_active=True
-            ).filter(
-                whatsapp_number__in=[from_number, normalized_number]
-            ).first()
-            
-            if not mapping:
-                raise WhatsAppMapping.DoesNotExist()
-            
-            user = mapping.user
-        except WhatsAppMapping.DoesNotExist:
-            # User not registered
-            whatsapp_service = WhatsAppService()
+
+        logger.info("Message text: %s", text)
+
+        # ------------------------------------------------------------
+        # FIND USER BY WHATSAPP NUMBER
+        # ------------------------------------------------------------
+        normalized = from_number.lstrip("0")
+
+        mapping = (
+            WhatsAppMapping.objects
+            .select_related("user")
+            .filter(is_active=True)
+            .filter(whatsapp_number__in=[from_number, normalized])
+            .first()
+        )
+
+        whatsapp_service = WhatsAppService()
+
+        if not mapping:
+            logger.info("Unregistered number: %s", from_number)
             whatsapp_service.send_message(
                 from_number,
-                "❌ Your WhatsApp number is not registered. Please register at our website first."
+                "❌ Your number is not registered. Please sign up on the website."
             )
             return
-        
-        # Process the message
-        response_message = process_user_message(user, text)
-        
-        # Send response
-        whatsapp_service = WhatsAppService()
-        whatsapp_service.send_message(from_number, response_message)
-        
-        # Mark message as read
+
+        user = mapping.user
+
+        # ------------------------------------------------------------
+        # PROCESS MESSAGE CONTENT
+        # ------------------------------------------------------------
+        response_text = process_user_message(user, text)
+
+        whatsapp_service.send_message(from_number, response_text)
         whatsapp_service.mark_message_read(message_id)
-        
-    except Exception as e:
-        logger.error(f"Error processing message: {str(e)}", exc_info=True)
+
+    except Exception:
+        logger.exception("Error processing message")
 
 
+# -------------------------------------------------------------------
+# PROCESS USER MESSAGE CONTENT
+# -------------------------------------------------------------------
 def process_user_message(user, text):
-    """Process user message and return appropriate response"""
     text_lower = text.lower().strip()
-    
-    # Check for commands
-    if text_lower == 'today':
-        generator = StatementGenerator(user)
-        return generator.generate_today()
-    
-    elif text_lower in ['this week', 'week']:
-        generator = StatementGenerator(user)
-        return generator.generate_week()
-    
-    elif text_lower in ['this month', 'month']:
-        generator = StatementGenerator(user)
-        return generator.generate_month()
-    
-    elif text_lower == 'summary':
-        generator = StatementGenerator(user)
-        return generator.generate_summary()
-    
-    elif text_lower.startswith('category '):
-        category_name = text[9:].strip()
-        generator = StatementGenerator(user)
-        return generator.generate_category(category_name)
-    
-    elif text_lower in ['help', 'commands']:
-        return get_help_message(user)
-    
-    elif text_lower == 'categories':
+
+    if text_lower == "today":
+        return StatementGenerator(user).generate_today()
+
+    if text_lower in ("week", "this week"):
+        return StatementGenerator(user).generate_week()
+
+    if text_lower in ("month", "this month"):
+        return StatementGenerator(user).generate_month()
+
+    if text_lower == "summary":
+        return StatementGenerator(user).generate_summary()
+
+    if text_lower.startswith("category "):
+        category = text[9:].strip()
+        return StatementGenerator(user).generate_category(category)
+
+    if text_lower in ("help", "commands"):
+        return get_help_message()
+
+    if text_lower == "categories":
         return get_categories_message(user)
-    
-    else:
-        # Try to parse as expense entry
-        parser = ExpenseParser(user)
-        result = parser.parse(text)
-        
-        if result is None:
-            return get_help_message(user)
-        
-        if 'error' in result:
-            return f"❌ {result['message']}"
-        
-        # Create expense
-        expense = Expense.objects.create(
-            user=user,
-            category=result['category'],
-            amount=result['amount'],
-            description=result['description'],
-            date=result['date'],
-            source='whatsapp'
-        )
-        
-        return f"✅ Recorded: {user.currency_symbol}{expense.amount} under {expense.category.icon} {expense.category.name}"
+
+    # ------------------------------------------------------------
+    # TRY PARSING AS EXPENSE
+    # ------------------------------------------------------------
+    parser = ExpenseParser(user)
+    result = parser.parse(text)
+
+    if not result:
+        return get_help_message()
+
+    if "error" in result:
+        return f"❌ {result['message']}"
+
+    expense = Expense.objects.create(
+        user=user,
+        category=result["category"],
+        amount=result["amount"],
+        description=result["description"],
+        date=result["date"],
+        source="whatsapp",
+    )
+
+    return (
+        f"✅ Recorded: {user.currency_symbol}{expense.amount} "
+        f"under {expense.category.icon} {expense.category.name}"
+    )
 
 
-def get_help_message(user):
-    """Get help message with available commands"""
-    return """📱 *Expense Tracker Commands*
-
-*Add Expense:*
-<amount> <category> [description]
-Example: 120 petrol
-Example: 450 food lunch
-
-*View Statements:*
-• today - Today's expenses
-• week - This week's expenses  
-• month - This month's expenses
-• summary - Monthly summary
-• category <name> - Category expenses
-
-*Other:*
-• categories - List categories
-• help - Show this message"""
+# -------------------------------------------------------------------
+# HELPERS
+# -------------------------------------------------------------------
+def get_help_message():
+    return (
+        "📱 *Expense Tracker Commands*\n\n"
+        "*Add Expense:*\n"
+        "<amount> <category> [description]\n"
+        "Example: 120 petrol\n"
+        "Example: 450 food lunch\n\n"
+        "*View Statements:*\n"
+        "• today\n"
+        "• week\n"
+        "• month\n"
+        "• summary\n"
+        "• category <name>\n\n"
+        "*Other:*\n"
+        "• categories\n"
+        "• help"
+    )
 
 
 def get_categories_message(user):
-    """Get list of user's categories"""
     from expenses.models import Category
-    
-    categories = Category.objects.filter(user=user, is_active=True).order_by('name')
-    
+
+    categories = Category.objects.filter(user=user, is_active=True).order_by("name")
+
     if not categories:
-        return "❌ No categories found. Please add categories from the web dashboard."
-    
+        return "❌ No categories found. Add categories from the web dashboard."
+
     message = "📂 *Your Categories:*\n\n"
     for cat in categories:
         message += f"{cat.icon} {cat.name}\n"
-    
+
     return message
 
+
+# -------------------------------------------------------------------
+# MAIN WEBHOOK ENDPOINT
+# -------------------------------------------------------------------
+@csrf_exempt
+@require_http_methods(["GET", "POST"])
+def whatsapp_webhook(request):
+    """
+    WhatsApp Cloud API webhook
+    GET  -> Verification
+    POST -> Incoming messages
+    """
+
+    # Log immediately when request hits Django
+    logger.info("========== WHATSAPP WEBHOOK HIT ==========")
+    logger.info("Method: %s", request.method)
+    logger.info("Path: %s", request.path)
+
+    if request.method == "GET":
+        return verify_webhook(request)
+
+    return handle_webhook(request)
+
+
+# -------------------------------------------------------------------
+# WEBHOOK VERIFICATION (META)
+# -------------------------------------------------------------------
+def verify_webhook(request):
+    """
+    Meta webhook verification
+    """
+    mode = request.GET.get("hub.mode")
+    token = request.GET.get("hub.verify_token")
+    challenge = request.GET.get("hub.challenge")
+
+    logger.info("Webhook verification request received")
+
+    if mode == "subscribe" and token == settings.WHATSAPP_VERIFY_TOKEN:
+        logger.info("Webhook verification SUCCESS")
+        return HttpResponse(challenge, content_type="text/plain")
+
+    logger.warning("Webhook verification FAILED")
+    return HttpResponse("Verification failed", status=403)
+
+
+# -------------------------------------------------------------------
+# HANDLE INCOMING WEBHOOK (POST)
+# -------------------------------------------------------------------
+def handle_webhook(request):
+    """
+    Handle incoming WhatsApp messages
+    """
+    try:
+        body = request.body.decode("utf-8")
+        logger.info("Raw webhook body: %s", body)
+
+        # ------------------------------------------------------------
+        # OPTIONAL: Signature verification (ENABLE IN PRODUCTION)
+        # ------------------------------------------------------------
+        # if not settings.DEBUG:
+        #     service = WhatsAppService()
+        #     if not service.verify_webhook_signature(request):
+        #         logger.warning("Invalid webhook signature")
+        #         return JsonResponse({"status": "invalid_signature"}, status=200)
+
+        data = json.loads(body)
+
+        # Meta sometimes sends events without messages
+        if "entry" not in data:
+            logger.info("No entry in webhook payload")
+            return JsonResponse({"status": "no_entry"}, status=200)
+
+        for entry in data["entry"]:
+            for change in entry.get("changes", []):
+                value = change.get("value", {})
+
+                messages = value.get("messages", [])
+                for message in messages:
+                    process_message(message)
+
+        return JsonResponse({"status": "success"}, status=200)
+
+    except json.JSONDecodeError:
+        logger.error("Invalid JSON payload")
+        return JsonResponse({"status": "invalid_json"}, status=200)
+
+    except Exception as e:
+        logger.exception("Unhandled webhook error")
+        return JsonResponse({"status": "error"}, status=200)
+
+
+# -------------------------------------------------------------------
+# PROCESS INDIVIDUAL MESSAGE
+# -------------------------------------------------------------------
+def process_message(message):
+    """
+    Process a single WhatsApp message
+    """
+    try:
+        message_type = message.get("type")
+        from_number = message.get("from")
+        message_id = message.get("id")
+
+        logger.info("Incoming message from %s | type=%s", from_number, message_type)
+
+        # Only text messages supported
+        if message_type != "text":
+            logger.info("Ignoring non-text message")
+            return
+
+        text = message.get("text", {}).get("body", "").strip()
+        if not text:
+            return
+
+        logger.info("Message text: %s", text)
+
+        # ------------------------------------------------------------
+        # FIND USER BY WHATSAPP NUMBER
+        # ------------------------------------------------------------
+        normalized = from_number.lstrip("0")
+
+        mapping = (
+            WhatsAppMapping.objects
+            .select_related("user")
+            .filter(is_active=True)
+            .filter(whatsapp_number__in=[from_number, normalized])
+            .first()
+        )
+
+        whatsapp_service = WhatsAppService()
+
+        if not mapping:
+            logger.info("Unregistered number: %s", from_number)
+            whatsapp_service.send_message(
+                from_number,
+                "❌ Your number is not registered. Please sign up on the website."
+            )
+            return
+
+        user = mapping.user
+
+        # ------------------------------------------------------------
+        # PROCESS MESSAGE CONTENT
+        # ------------------------------------------------------------
+        response_text = process_user_message(user, text)
+
+        whatsapp_service.send_message(from_number, response_text)
+        whatsapp_service.mark_message_read(message_id)
+
+    except Exception:
+        logger.exception("Error processing message")
+
+
+# -------------------------------------------------------------------
+# PROCESS USER MESSAGE CONTENT
+# -------------------------------------------------------------------
+def process_user_message(user, text):
+    text_lower = text.lower().strip()
+
+    if text_lower == "today":
+        return StatementGenerator(user).generate_today()
+
+    if text_lower in ("week", "this week"):
+        return StatementGenerator(user).generate_week()
+
+    if text_lower in ("month", "this month"):
+        return StatementGenerator(user).generate_month()
+
+    if text_lower == "summary":
+        return StatementGenerator(user).generate_summary()
+
+    if text_lower.startswith("category "):
+        category = text[9:].strip()
+        return StatementGenerator(user).generate_category(category)
+
+    if text_lower in ("help", "commands"):
+        return get_help_message()
+
+    if text_lower == "categories":
+        return get_categories_message(user)
+
+    # ------------------------------------------------------------
+    # TRY PARSING AS EXPENSE
+    # ------------------------------------------------------------
+    parser = ExpenseParser(user)
+    result = parser.parse(text)
+
+    if not result:
+        return get_help_message()
+
+    if "error" in result:
+        return f"❌ {result['message']}"
+
+    expense = Expense.objects.create(
+        user=user,
+        category=result["category"],
+        amount=result["amount"],
+        description=result["description"],
+        date=result["date"],
+        source="whatsapp",
+    )
+
+    return (
+        f"✅ Recorded: {user.currency_symbol}{expense.amount} "
+        f"under {expense.category.icon} {expense.category.name}"
+    )
+
+
+# -------------------------------------------------------------------
+# HELPERS
+# -------------------------------------------------------------------
+def get_help_message():
+    return (
+        "📱 *Expense Tracker Commands*\n\n"
+        "*Add Expense:*\n"
+        "<amount> <category> [description]\n"
+        "Example: 120 petrol\n"
+        "Example: 450 food lunch\n\n"
+        "*View Statements:*\n"
+        "• today\n"
+        "• week\n"
+        "• month\n"
+        "• summary\n"
+        "• category <name>\n\n"
+        "*Other:*\n"
+        "• categories\n"
+        "• help"
+    )
+
+
+def get_categories_message(user):
+    from expenses.models import Category
+
+    categories = Category.objects.filter(user=user, is_active=True).order_by("name")
+
+    if not categories:
+        return "❌ No categories found. Add categories from the web dashboard."
+
+    message = "📂 *Your Categories:*\n\n"
+    for cat in categories:
+        message += f"{cat.icon} {cat.name}\n"
+
+    return message

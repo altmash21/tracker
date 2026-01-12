@@ -188,6 +188,12 @@ LOGGING = {
             'filename': BASE_DIR / 'debug.log',
             'formatter': 'verbose',
         },
+        'whatsapp_file': {
+            'level': 'INFO',
+            'class': 'logging.FileHandler',
+            'filename': BASE_DIR / 'whatsapp_webhook.log',
+            'formatter': 'verbose',
+        },
     },
     'root': {
         'handlers': ['console', 'file'],
@@ -196,6 +202,11 @@ LOGGING = {
     'loggers': {
         'django': {
             'handlers': ['console', 'file'],
+            'level': 'INFO',
+            'propagate': False,
+        },
+        'whatsapp': {
+            'handlers': ['console', 'whatsapp_file'],
             'level': 'INFO',
             'propagate': False,
         },
