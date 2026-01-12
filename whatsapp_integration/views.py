@@ -80,7 +80,7 @@ def handle_webhook(request):
         
         # Extract message data
         if 'entry' not in data:
-            return JsonResponse({'status': 'no_entry'})
+            return JsonResponse({'status': 'no_entry'}, status=200)  # Always return 200 to Meta
         
         for entry in data['entry']:
             for change in entry.get('changes', []):
@@ -91,11 +91,17 @@ def handle_webhook(request):
                     for message in value['messages']:
                         process_message(message, value)
         
-        return JsonResponse({'status': 'success'})
+        # CRITICAL: Return 200 immediately to prevent Meta from retrying
+        return JsonResponse({'status': 'success'}, status=200)
+    
+    except json.JSONDecodeError as e:
+        logger.error(f"Invalid JSON in webhook: {str(e)}")
+        return JsonResponse({'status': 'invalid_json'}, status=200)  # Still return 200
     
     except Exception as e:
         logger.error(f"Error processing webhook: {str(e)}", exc_info=True)
-        return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
+        # Return 200 even on error to prevent Meta retries
+        return JsonResponse({'status': 'error', 'message': str(e)}, status=200)
 
 
 def process_message(message, value):
