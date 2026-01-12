@@ -17,26 +17,41 @@ def get_input(prompt, default=None):
 
 if __name__ == '__main__':
     print("--- WhatsApp API Test Script ---")
-    # Prompt for API configs
+    print("Note: Only Phone Number ID, Business Account ID, and Access Token are required for sending messages.\n")
+    
+    # Prompt for API configs (only what's needed for sending)
     phone_number_id = get_input("Enter WhatsApp Phone Number ID", os.environ.get('WHATSAPP_PHONE_NUMBER_ID'))
     access_token = get_input("Enter WhatsApp Access Token", os.environ.get('WHATSAPP_ACCESS_TOKEN'))
     business_account_id = get_input("Enter WhatsApp Business Account ID", os.environ.get('WHATSAPP_BUSINESS_ACCOUNT_ID'))
-    verify_token = get_input("Enter WhatsApp Verify Token", os.environ.get('WHATSAPP_VERIFY_TOKEN'))
 
     # Prompt for message details
+    print("\nChoose message type:")
+    print("1. Template message (hello_world) - Works anytime")
+    print("2. Regular text message - Requires active 24hr conversation window")
+    choice = get_input("Enter choice (1 or 2)", "1")
+    
     to_number = get_input("Enter recipient WhatsApp number (with country code, e.g. 919151726993)")
-    message = get_input("Enter message to send", "Hello from the WhatsApp API test script!")
 
     # Patch Django settings for this test
     from django.conf import settings
     settings.WHATSAPP_PHONE_NUMBER_ID = phone_number_id
     settings.WHATSAPP_ACCESS_TOKEN = access_token
     settings.WHATSAPP_BUSINESS_ACCOUNT_ID = business_account_id
-    settings.WHATSAPP_VERIFY_TOKEN = verify_token
 
     try:
         service = WhatsAppService()
-        response = service.send_message(to_number, message)
-        print('Message sent! Response:', response)
+        
+        if choice == "1":
+            # Send template message
+            print("\nSending hello_world template message...")
+            response = service.send_template_message(to_number, "hello_world", "en_US")
+            print('Template message sent! Response:', response)
+            print("\nIMPORTANT: Reply to this message on WhatsApp to open a 24-hour conversation window!")
+        else:
+            # Send regular text message
+            message = get_input("Enter message to send", "Hello from the WhatsApp API test script!")
+            response = service.send_message(to_number, message)
+            print('Message sent! Response:', response)
+            
     except Exception as e:
         print('Error sending message:', e)

@@ -21,7 +21,7 @@ class WhatsAppService:
             logger.error("WhatsApp Business API credentials are not configured properly")
         
         # Meta API endpoint
-        self.api_url = f"https://graph.instagram.com/v20.0/{self.phone_number_id}/messages"
+        self.api_url = f"https://graph.facebook.com/v22.0/{self.phone_number_id}/messages"
         self.headers = {
             "Authorization": f"Bearer {self.access_token}",
             "Content-Type": "application/json"
@@ -147,7 +147,7 @@ class WhatsAppService:
     def mark_message_read(self, message_id):
         """Mark a message as read"""
         try:
-            url = f"https://graph.instagram.com/v20.0/{self.phone_number_id}/messages"
+            url = f"https://graph.facebook.com/v22.0/{self.phone_number_id}/messages"
             
             payload = {
                 "messaging_product": "whatsapp",

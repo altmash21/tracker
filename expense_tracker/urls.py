@@ -23,7 +23,7 @@ from whatsapp_integration import views as whatsapp_views
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('whatsapp/', include('whatsapp_integration.urls')),
-    path('webhooks/whatsapp/', whatsapp_views.whatsapp_webhook, name='whatsapp_webhook'),
+    # Removed duplicate route - using whatsapp/webhook/ only
     path('', include('dashboard.urls')),
 ]
 
