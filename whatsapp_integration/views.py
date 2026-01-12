@@ -18,6 +18,11 @@ from .expense_handler import ExpenseParser, StatementGenerator
 # -------------------------------------------------------------------
 logger = logging.getLogger("whatsapp")
 
+# Test endpoint to verify routing
+from django.http import HttpResponse
+def webhook_test(request):
+    return HttpResponse("Webhook test OK")
+
 
 # -------------------------------------------------------------------
 # MAIN WEBHOOK ENDPOINT
