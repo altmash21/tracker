@@ -1,1 +1,41 @@
+{% extends 'dashboard/base.html' %}
 
+{% block title %}Verify OTP - Expense Tracker by Techspark{% endblock %}
+
+{% block content %}
+<div class="card" style="max-width: 400px; margin: 100px auto;">
+    <h2 style="margin-bottom: 20px; text-align: center;">Verify OTP</h2>
+    <p style="color: #666; margin-bottom: 30px; text-align: center;">Enter the 6-digit OTP sent to your phone number.</p>
+    
+    <form method="post">
+        {% csrf_token %}
+        <div class="form-group">
+            <label for="otp">OTP Code:</label>
+            <input type="text" 
+                   id="otp" 
+                   name="otp" 
+                   class="form-control" 
+                   placeholder="Enter 6-digit OTP" 
+                   maxlength="6" 
+                   required
+                   style="text-align: center; font-size: 1.2rem; letter-spacing: 0.2rem;">
+        </div>
+        
+        <button type="submit" class="btn btn-success" style="width: 100%; margin-top: 10px;">
+            Verify OTP
+        </button>
+    </form>
+    
+    <div style="text-align: center; margin-top: 20px;">
+        <a href="{% url 'dashboard:link_whatsapp' %}" style="color: #6b7280; text-decoration: none; font-size: 0.9rem;">
+            ← Back to WhatsApp Linking
+        </a>
+    </div>
+    
+    <div style="text-align: center; margin-top: 15px;">
+        <p style="color: #6b7280; font-size: 0.85rem;">
+            Powered by <strong style="color: #3b82f6;">Techspark</strong>
+        </p>
+    </div>
+</div>
+{% endblock %}
