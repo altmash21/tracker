@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}Expense Tracker{% endblock %}</title>
+    <title>{% block title %}Expense Tracker by Techspark{% endblock %}</title>
     <style>
         * {
             margin: 0;
@@ -17,6 +17,8 @@
             min-height: 100vh;
             padding: 0;
             color: #1a1a1a;
+            display: flex;
+            flex-direction: column;
         }
         
         .container {
@@ -235,7 +237,7 @@
     {% if user.is_authenticated %}
     <nav class="navbar">
         <div class="navbar-inner">
-            <a href="{% url 'dashboard:dashboard' %}" class="navbar-brand">Expense Tracker</a>
+            <a href="{% url 'dashboard:dashboard' %}" class="navbar-brand">Expense Tracker <span style="font-size: 0.8em; color: #6b7280;">by Techspark</span></a>
             <div class="navbar-menu">
                 <a href="{% url 'dashboard:dashboard' %}">Dashboard</a>
                 <a href="{% url 'dashboard:expenses' %}">Expenses</a>
@@ -266,6 +268,14 @@
         
         {% block content %}{% endblock %}
     </div>
+    
+    <!-- Footer -->
+    <footer style="background: #f8f9fa; border-top: 1px solid #e5e7eb; margin-top: auto; padding: 20px 0; text-align: center; color: #6b7280; font-size: 14px;">
+        <div class="container" style="max-width: 1200px; margin: 0 auto; padding: 0 24px;">
+            <p>© 2025 Expense Tracker by <strong style="color: #1a1a1a;">Techspark</strong>. All rights reserved.</p>
+            <p style="margin-top: 8px; font-size: 12px;">Powered by Techspark - Your trusted business solutions partner</p>
+        </div>
+    </footer>
     
     {% block extra_js %}{% endblock %}
 </body>
