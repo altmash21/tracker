@@ -5,7 +5,7 @@ from datetime import timedelta
 
 from django.conf import settings
 from django.contrib import messages
-from django.contrib.auth import authenticate, login, logout
+from django.contrib.auth import login, logout
 from django.contrib.auth.decorators import login_required
 from django.core.cache import cache
 from django.db.models import Sum
@@ -15,7 +15,8 @@ from django.utils import timezone
 from django.views.decorators.http import require_POST
 
 from expenses.models import Category, Expense, Receipt
-from users.models import User, WhatsAppMapping
+from users.models import OTPVerification, User, WhatsAppMapping
+from users.services import generate_otp_for_user, normalize_whatsapp_number, verify_otp_for_user
 from whatsapp_integration.exceptions import AICategoriaztionException, AmountNotFoundException, OCRException
 from whatsapp_integration.receipt_processor import process_receipt
 from whatsapp_integration.whatsapp_service import WhatsAppService
@@ -117,20 +118,113 @@ def register(request):
 
 
 def user_login(request):
-    """User login"""
+    """Passwordless login using WhatsApp OTP."""
+    if request.user.is_authenticated:
+        return redirect('dashboard:dashboard')
+
     if request.method == 'POST':
-        username = request.POST.get('username')
-        password = request.POST.get('password')
-        
-        user = authenticate(request, username=username, password=password)
-        
-        if user is not None:
-            login(request, user)
-            return redirect('dashboard:dashboard')
+        phone_number = request.POST.get('phone_number', '').strip()
+        normalized_number = normalize_whatsapp_number(phone_number)
+
+        if not normalized_number:
+            messages.error(request, 'Please enter a valid WhatsApp number with country code.')
+            return render(request, 'dashboard/login.html', {'show_otp_form': False})
+
+        user = get_user_by_whatsapp_number(normalized_number)
+        if not user:
+            messages.error(request, 'No account found for this number. Send a WhatsApp message first to auto-create your account.')
+            return render(request, 'dashboard/login.html', {'show_otp_form': False})
+
+        otp_record = generate_otp_for_user(user, purpose=OTPVerification.PURPOSE_LOGIN)
+        otp_message = (
+            f'🔐 Your XpenseDiary login OTP is: *{otp_record.otp}*\n\n'
+            'Valid for 10 minutes. Do not share this with anyone.\n'
+            '— *TechSpark*'
+        )
+
+        whatsapp_service = WhatsAppService()
+        send_result = whatsapp_service.send_message(normalized_number, otp_message)
+
+        if send_result:
+            messages.success(request, 'OTP sent to your WhatsApp number.')
         else:
-            messages.error(request, 'Invalid username or password')
-    
-    return render(request, 'dashboard/login.html')
+            if settings.DEBUG:
+                messages.warning(request, f'WhatsApp send failed in development. OTP: {otp_record.otp}')
+            else:
+                messages.error(request, 'Could not send OTP right now. Please try again.')
+
+        return render(
+            request,
+            'dashboard/login.html',
+            {
+                'show_otp_form': True,
+                'phone_number': normalized_number,
+            },
+        )
+
+    return render(request, 'dashboard/login.html', {'show_otp_form': False})
+
+
+def verify_otp_login(request):
+    """Validate OTP and start authenticated dashboard session."""
+    if request.method != 'POST':
+        return redirect('dashboard:login')
+
+    phone_number = request.POST.get('phone_number', '').strip()
+    otp = request.POST.get('otp', '').strip()
+    normalized_number = normalize_whatsapp_number(phone_number)
+
+    if not normalized_number or not otp:
+        messages.error(request, 'Both phone number and OTP are required.')
+        return render(
+            request,
+            'dashboard/login.html',
+            {
+                'show_otp_form': True,
+                'phone_number': normalized_number,
+            },
+        )
+
+    user = get_user_by_whatsapp_number(normalized_number)
+    if not user:
+        messages.error(request, 'No account found for this number.')
+        return redirect('dashboard:login')
+
+    if not verify_otp_for_user(user, otp, purpose=OTPVerification.PURPOSE_LOGIN):
+        messages.error(request, 'Invalid or expired OTP.')
+        return render(
+            request,
+            'dashboard/login.html',
+            {
+                'show_otp_form': True,
+                'phone_number': normalized_number,
+            },
+        )
+
+    login(request, user)
+    messages.success(request, 'Login successful.')
+    return redirect('dashboard:dashboard')
+
+
+def get_user_by_whatsapp_number(normalized_number):
+    user = User.objects.filter(whatsapp_number=normalized_number).first()
+    if user:
+        return user
+
+    user = User.objects.filter(phone_number=normalized_number).first()
+    if user:
+        return user
+
+    mapping = (
+        WhatsAppMapping.objects
+        .select_related('user')
+        .filter(whatsapp_number=normalized_number, is_active=True)
+        .first()
+    )
+    if mapping:
+        return mapping.user
+
+    return None
 
 
 def user_logout(request):

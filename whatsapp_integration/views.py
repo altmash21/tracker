@@ -7,15 +7,41 @@ from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_http_methods
 
 from expenses.models import Expense
-from users.models import WhatsAppMapping
+from users.services import get_or_create_whatsapp_user
 
 from .exceptions import AICategoriaztionException, AmountNotFoundException, OCRException
-from .expense_handler import ExpenseParser, StatementGenerator
+from .expense_handler import ExpenseParser, StatementGenerator, handle_login_command
 from .receipt_processor import process_receipt
 from .whatsapp_service import WhatsAppService
 
 
-logger = logging.getLogger('whatsapp')
+logger = logging.getLogger(__name__)
+
+
+def with_techspark_footer(message):
+    if not message:
+        return message
+
+    if message.strip().endswith('— *TechSpark*'):
+        return message
+
+    if message.strip().endswith('XpenseDiary by TechSpark'):
+        return message
+
+    return f'{message}\n\n— *TechSpark*'
+
+
+def get_welcome_message():
+    return (
+        '👋 Welcome to *XpenseDiary* by TechSpark!\n\n'
+        'Your account has been created automatically.\n'
+        'Just send expenses like:\n'
+        '• *250 food* — adds ₹250 under Food\n'
+        '• *500 petrol* — adds ₹500 under Transport\n\n'
+        'Type *help* to see all commands.\n'
+        'Type *login* to get a link to your dashboard.\n\n'
+        '— *TechSpark*'
+    )
 
 
 def webhook_test(request):
@@ -83,27 +109,12 @@ def process_message(message):
 
     logger.info('Incoming message from %s | type=%s', from_number, message_type)
 
-    normalized = from_number.lstrip('0') if from_number else ''
-    mapping = (
-        WhatsAppMapping.objects
-        .select_related('user')
-        .filter(is_active=True)
-        .filter(whatsapp_number__in=[from_number, normalized])
-        .first()
-    )
-
     whatsapp_service = WhatsAppService()
 
     try:
-        if not mapping:
-            logger.info('Unregistered number: %s', from_number)
-            whatsapp_service.send_message(
-                from_number,
-                '❌ Your number is not registered. Please sign up on the website.'
-            )
-            return
-
-        user = mapping.user
+        user, was_created = get_or_create_whatsapp_user(from_number)
+        if was_created:
+            whatsapp_service.send_message(from_number, get_welcome_message())
 
         if message_type == 'text':
             text = message.get('text', {}).get('body', '').strip()
@@ -112,40 +123,46 @@ def process_message(message):
 
             logger.info('Message text: %s', text)
             response_text = process_user_message(user, text)
-            whatsapp_service.send_message(from_number, response_text)
+            whatsapp_service.send_message(from_number, with_techspark_footer(response_text))
             return
 
         if message_type == 'image':
             image_id = message.get('image', {}).get('id')
             if not image_id:
-                whatsapp_service.send_message(from_number, '❌ Receipt image is missing media details.')
+                whatsapp_service.send_message(
+                    from_number,
+                    with_techspark_footer('❌ Receipt image is missing media details.')
+                )
                 return
 
             image_path = whatsapp_service.download_media(image_id)
             if not image_path:
-                whatsapp_service.send_message(from_number, '❌ Could not download receipt image.')
+                whatsapp_service.send_message(
+                    from_number,
+                    with_techspark_footer('❌ Could not download receipt image.')
+                )
                 return
 
             try:
                 expense = process_receipt(image_path, user)
                 whatsapp_service.send_message(
                     from_number,
-                    f'✅ ₹{expense.amount} added under {expense.category.name} from receipt'
+                    with_techspark_footer(f'✅ ₹{expense.amount} added under {expense.category.name} from receipt')
                 )
             except OCRException:
                 whatsapp_service.send_message(
                     from_number,
-                    '❌ Couldn\'t read receipt. Please type: amount category'
+                    with_techspark_footer('❌ Couldn\'t read receipt. Please type: amount category')
                 )
             except AmountNotFoundException:
                 whatsapp_service.send_message(
                     from_number,
-                    '🔍 Found receipt but no total. Reply with amount to confirm'
+                    with_techspark_footer('🔍 Found receipt but no total. Reply with amount to confirm')
                 )
             except AICategoriaztionException:
                 whatsapp_service.send_message(
                     from_number,
-                    '❌ Could not categorize the receipt automatically. Please type: amount category'
+                    with_techspark_footer('❌ Could not categorize the receipt automatically. Please type: amount category')
                 )
             return
 
@@ -153,7 +170,10 @@ def process_message(message):
 
     except Exception:
         logger.exception('Error processing message')
-        whatsapp_service.send_message(from_number, '❌ Unable to process your message right now.')
+        whatsapp_service.send_message(
+            from_number,
+            with_techspark_footer('❌ Unable to process your message right now.')
+        )
     finally:
         if message_id:
             whatsapp_service.mark_message_read(message_id)
@@ -161,6 +181,9 @@ def process_message(message):
 
 def process_user_message(user, text):
     text_lower = text.lower().strip()
+
+    if text_lower == 'login':
+        return handle_login_command(user)
 
     if text_lower == 'today':
         return StatementGenerator(user).generate_today()

@@ -48,6 +48,9 @@ class WhatsAppService:
     def send_message(self, to_number, message):
         """Send a text message to a WhatsApp number using Meta API"""
         try:
+            if message and not message.strip().endswith('— *TechSpark*') and not message.strip().endswith('XpenseDiary by TechSpark'):
+                message = f"{message}\n\n— *TechSpark*"
+
             # Format phone number
             to_number = self.format_phone_number(to_number)
             if not to_number:

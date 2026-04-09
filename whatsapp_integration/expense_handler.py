@@ -1,8 +1,11 @@
 import re
 import logging
 from datetime import datetime, timedelta
+from django.conf import settings
 from django.utils import timezone
 from expenses.models import Category, Expense
+from users.models import OTPVerification
+from users.services import generate_otp_for_user
 
 logger = logging.getLogger(__name__)
 
@@ -199,33 +202,45 @@ class StatementGenerator:
         message += f"💰 Total: {self.currency_symbol}{total:.2f}"
         
         return message
-    
+
     def _format_expenses(self, expenses, title):
         """Format expenses into a readable message"""
         if not expenses:
             return f"{title}\n\nNo expenses recorded."
-        
-        from django.db.models import Sum
-        
+
         # Group by category
         category_totals = {}
         for expense in expenses:
             cat_name = expense.category.name
             cat_icon = expense.category.icon
             key = f"{cat_icon} {cat_name}"
-            
+
             if key not in category_totals:
                 category_totals[key] = 0
             category_totals[key] += float(expense.amount)
-        
+
         message = f"{title}\n\n"
-        
+
         total = 0
         for cat, amount in sorted(category_totals.items(), key=lambda x: x[1], reverse=True):
             message += f"{cat}: {self.currency_symbol}{amount:.2f}\n"
             total += amount
-        
+
         message += f"\n{'='*25}\n"
         message += f"💰 Total: {self.currency_symbol}{total:.2f}"
-        
+
         return message
+
+
+def handle_login_command(user):
+    """Generate login OTP and return WhatsApp message for dashboard sign-in."""
+    otp_record = generate_otp_for_user(user, purpose=OTPVerification.PURPOSE_LOGIN)
+    login_url = getattr(settings, 'XPENSEDIARY_LOGIN_URL', 'https://xpensediary.com/login/')
+
+    return (
+        f"🔗 Your dashboard login OTP: *{otp_record.otp}*\n"
+        f"Visit: {login_url}\n"
+        "Enter your number + this OTP to login.\n"
+        "Valid 10 minutes.\n"
+        "— *TechSpark*"
+    )

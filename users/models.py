@@ -5,9 +5,21 @@ from django.utils import timezone
 
 class User(AbstractUser):
     """Extended User model with additional fields"""
+    ACCOUNT_TYPE_MANUAL = 'manual'
+    ACCOUNT_TYPE_WHATSAPP_CREATED = 'whatsapp_created'
+    ACCOUNT_TYPE_CHOICES = [
+        (ACCOUNT_TYPE_MANUAL, 'Manual Signup'),
+        (ACCOUNT_TYPE_WHATSAPP_CREATED, 'WhatsApp Auto Created'),
+    ]
+
     phone_number = models.CharField(max_length=15, blank=True, null=True)
     whatsapp_number = models.CharField(max_length=15, blank=True, null=True, unique=True)
     whatsapp_verified = models.BooleanField(default=False)
+    account_type = models.CharField(
+        max_length=32,
+        choices=ACCOUNT_TYPE_CHOICES,
+        default=ACCOUNT_TYPE_MANUAL,
+    )
     otp = models.CharField(max_length=6, blank=True, null=True)
     otp_created_at = models.DateTimeField(blank=True, null=True)
     currency = models.CharField(max_length=3, default='INR')
@@ -54,6 +66,7 @@ class WhatsAppMapping(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='whatsapp_mapping')
     whatsapp_number = models.CharField(max_length=15, unique=True, db_index=True)
     is_active = models.BooleanField(default=True)
+    is_verified = models.BooleanField(default=False)
     last_interaction = models.DateTimeField(auto_now=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
@@ -64,4 +77,33 @@ class WhatsAppMapping(models.Model):
 
     def __str__(self):
         return f"{self.whatsapp_number} -> {self.user.username}"
+
+
+class OTPVerification(models.Model):
+    """Generic OTP records for login and WhatsApp verification."""
+
+    PURPOSE_LOGIN = 'login'
+    PURPOSE_WHATSAPP_VERIFY = 'whatsapp_verify'
+    PURPOSE_CHOICES = [
+        (PURPOSE_LOGIN, 'Login'),
+        (PURPOSE_WHATSAPP_VERIFY, 'WhatsApp Verify'),
+    ]
+
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='otp_verifications')
+    otp = models.CharField(max_length=6)
+    purpose = models.CharField(max_length=32, choices=PURPOSE_CHOICES)
+    is_used = models.BooleanField(default=False)
+    expires_at = models.DateTimeField()
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = 'otp_verifications'
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"{self.user.username} - {self.purpose} - {self.otp}"
+
+    @property
+    def is_expired(self):
+        return timezone.now() > self.expires_at
 

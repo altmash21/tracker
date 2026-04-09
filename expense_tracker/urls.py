@@ -18,11 +18,13 @@ from django.contrib import admin
 from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
+from dashboard import views as dashboard_views
 from whatsapp_integration import views as whatsapp_views
 
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('whatsapp/', include('whatsapp_integration.urls')),
+    path('verify-otp/', dashboard_views.verify_otp_login, name='verify_otp'),
     # Removed duplicate route - using whatsapp/webhook/ only
     path('', include('dashboard.urls')),
 ]
