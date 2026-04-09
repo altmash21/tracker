@@ -1,4 +1,4 @@
-# WhatsApp-Integrated Expense Tracking System
+# XPENSEDIARY - WhatsApp-Integrated Expense Tracking System
 
 A WhatsApp-first expense tracking system that allows users to record daily expenses using WhatsApp messages and view statements and summaries directly inside WhatsApp, with a comprehensive web dashboard for analytics and management.
 

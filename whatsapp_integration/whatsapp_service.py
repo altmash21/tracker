@@ -1,4 +1,5 @@
 import logging
+from pathlib import Path
 import requests
 import hmac
 import hashlib
@@ -142,6 +143,60 @@ class WhatsAppService:
             return None
         except Exception as e:
             logger.error(f"Unexpected error sending template: {str(e)}")
+            return None
+
+    def download_media(self, media_id):
+        """Download a WhatsApp media file and return the absolute local path"""
+        if not media_id:
+            logger.error("No media_id provided for media download")
+            return None
+
+        try:
+            media_info_url = f"https://graph.facebook.com/v22.0/{media_id}"
+            info_response = requests.get(media_info_url, headers=self.headers, timeout=10)
+
+            if info_response.status_code != 200:
+                logger.error("Failed to fetch media info for %s: %s %s", media_id, info_response.status_code, info_response.text)
+                return None
+
+            media_info = info_response.json()
+            download_url = media_info.get('url')
+            mime_type = media_info.get('mime_type', '')
+
+            if not download_url:
+                logger.error("Media download URL missing for %s", media_id)
+                return None
+
+            download_response = requests.get(download_url, headers=self.headers, timeout=30, stream=True)
+            if download_response.status_code != 200:
+                logger.error("Failed to download media %s: %s %s", media_id, download_response.status_code, download_response.text)
+                return None
+
+            extension_map = {
+                'image/jpeg': '.jpg',
+                'image/jpg': '.jpg',
+                'image/png': '.png',
+                'image/webp': '.webp',
+            }
+            file_extension = extension_map.get(mime_type, '.jpg')
+
+            receipts_dir = Path(settings.MEDIA_ROOT) / 'whatsapp_receipts'
+            receipts_dir.mkdir(parents=True, exist_ok=True)
+
+            file_path = receipts_dir / f'{media_id}{file_extension}'
+            with open(file_path, 'wb') as file_handle:
+                for chunk in download_response.iter_content(chunk_size=8192):
+                    if chunk:
+                        file_handle.write(chunk)
+
+            logger.info("Media %s downloaded to %s", media_id, file_path)
+            return str(file_path.resolve())
+
+        except requests.exceptions.RequestException as e:
+            logger.error("Error downloading media %s: %s", media_id, str(e))
+            return None
+        except Exception as e:
+            logger.error("Unexpected error downloading media %s: %s", media_id, str(e))
             return None
     
     def mark_message_read(self, message_id):

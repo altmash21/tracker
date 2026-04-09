@@ -45,7 +45,7 @@ print(f"   ✓ OTP expires in 10 minutes")
 # Send OTP via WhatsApp
 print(f"\n3. Sending OTP via WhatsApp to {test_phone}...")
 ws = WhatsAppService()
-message = f"Your OTP for Expense Tracker registration is: {otp}\n\nThis OTP is valid for 10 minutes."
+message = f"Your OTP for XPENSEDIARY registration is: {otp}\n\nThis OTP is valid for 10 minutes."
 result = ws.send_message(test_phone, message)
 
 if result:

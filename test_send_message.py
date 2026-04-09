@@ -35,7 +35,7 @@ if not settings.WHATSAPP_PHONE_NUMBER_ID:
 
 print(f"\nSending test message to: {test_number}")
 
-message = "✅ This is a test message from your WhatsApp Expense Tracker app. If you receive this, Meta API integration is working!"
+message = "✅ This is a test message from your WhatsApp XPENSEDIARY app. If you receive this, Meta API integration is working!"
 
 result = ws.send_message(test_number, message)
 

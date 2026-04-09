@@ -38,6 +38,7 @@ class Expense(models.Model):
         ('whatsapp', 'WhatsApp'),
         ('web', 'Web Dashboard'),
         ('api', 'API'),
+        ('ocr', 'OCR Receipt'),
     ]
     source = models.CharField(max_length=10, choices=SOURCE_CHOICES, default='whatsapp')
     
@@ -71,4 +72,29 @@ class Expense(models.Model):
     def hard_delete(self):
         """Permanent deletion"""
         super().delete()
+
+
+class Receipt(models.Model):
+    """Uploaded receipt image and OCR processing metadata"""
+    PROCESSING_STATUS_CHOICES = [
+        ('pending', 'Pending'),
+        ('success', 'Success'),
+        ('failed', 'Failed'),
+    ]
+
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='receipts')
+    image = models.ImageField(upload_to='receipts/')
+    extracted_text = models.TextField(blank=True, default='')
+    raw_ocr_response = models.JSONField(default=dict, blank=True)
+    processing_status = models.CharField(max_length=10, choices=PROCESSING_STATUS_CHOICES, default='pending')
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = 'receipts'
+        verbose_name = 'Receipt'
+        verbose_name_plural = 'Receipts'
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"Receipt #{self.id} - {self.user.username}"
 

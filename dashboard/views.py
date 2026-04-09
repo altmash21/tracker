@@ -1,14 +1,27 @@
-from django.contrib.auth.decorators import login_required
-from django.conf import settings
-from django.shortcuts import render, redirect
-from django.contrib.auth import login, authenticate, logout
-from django.contrib import messages
-from django.db.models import Sum, Count
-from django.utils import timezone
+import hashlib
+import logging
+import os
 from datetime import timedelta
+
+from django.conf import settings
+from django.contrib import messages
+from django.contrib.auth import authenticate, login, logout
+from django.contrib.auth.decorators import login_required
+from django.core.cache import cache
+from django.db.models import Sum
+from django.http import JsonResponse
+from django.shortcuts import redirect, render
+from django.utils import timezone
+from django.views.decorators.http import require_POST
+
+from expenses.models import Category, Expense, Receipt
 from users.models import User, WhatsAppMapping
-from expenses.models import Category, Expense
+from whatsapp_integration.exceptions import AICategoriaztionException, AmountNotFoundException, OCRException
+from whatsapp_integration.receipt_processor import process_receipt
 from whatsapp_integration.whatsapp_service import WhatsAppService
+
+
+logger = logging.getLogger(__name__)
 
 # --- WhatsApp Spend Reminder ---
 @login_required
@@ -37,18 +50,6 @@ def send_spend_reminder(request):
     else:
         messages.error(request, 'Failed to send WhatsApp reminder.')
     return redirect('dashboard:dashboard')
-
-from django.contrib.auth.decorators import login_required
-from django.shortcuts import render, redirect
-from django.contrib.auth import login, authenticate, logout
-from django.contrib import messages
-from django.db.models import Sum, Count
-from django.utils import timezone
-from datetime import timedelta
-from users.models import User, WhatsAppMapping
-from expenses.models import Category, Expense
-from whatsapp_integration.whatsapp_service import WhatsAppService
-
 
 def home(request):
     """Landing page"""
@@ -160,12 +161,26 @@ def dashboard(request):
     month_total = month_expenses.aggregate(total=Sum('amount'))['total'] or 0
     
     # Category breakdown (monthly)
-    category_data = month_expenses.values('category__name', 'category__icon', 'category__color').annotate(
+    category_data = list(month_expenses.values('category__name', 'category__icon', 'category__color').annotate(
         total=Sum('amount')
-    ).order_by('-total')
+    ).order_by('-total'))
+
+    for item in category_data:
+        item['percentage'] = 0
+        if month_total:
+            item['percentage'] = round((float(item['total']) / float(month_total)) * 100, 1)
     
     # Recent expenses
     recent_expenses = Expense.objects.filter(user=user, is_deleted=False).select_related('category')[:10]
+
+    # Receipt analytics
+    recent_receipts = Receipt.objects.filter(user=user).order_by('-created_at')[:5]
+    receipt_total = Receipt.objects.filter(user=user).count()
+    receipt_success = Receipt.objects.filter(user=user, processing_status='success').count()
+    receipt_failed = Receipt.objects.filter(user=user, processing_status='failed').count()
+    receipt_pending = Receipt.objects.filter(user=user, processing_status='pending').count()
+
+    top_category = category_data[0] if category_data else None
     
     context = {
         'today_total': today_total,
@@ -173,6 +188,12 @@ def dashboard(request):
         'month_total': month_total,
         'category_data': category_data,
         'recent_expenses': recent_expenses,
+        'recent_receipts': recent_receipts,
+        'receipt_total': receipt_total,
+        'receipt_success': receipt_success,
+        'receipt_failed': receipt_failed,
+        'receipt_pending': receipt_pending,
+        'top_category': top_category,
         'whatsapp_verified': user.whatsapp_verified,
     }
     
@@ -327,4 +348,83 @@ def expenses_list(request):
     }
     
     return render(request, 'dashboard/expenses.html', context)
+
+
+@login_required
+@require_POST
+def upload_receipt_view(request):
+    """Upload a receipt image and process it synchronously."""
+    uploaded_file = request.FILES.get('image') or request.FILES.get('receipt')
+
+    if not uploaded_file:
+        return JsonResponse({'status': 'error', 'message': 'No receipt image was uploaded.'}, status=400)
+
+    if uploaded_file.size > 5 * 1024 * 1024:
+        return JsonResponse({'status': 'error', 'message': 'Receipt image must be 5MB or smaller.'}, status=400)
+
+    allowed_extensions = {'.jpg', '.jpeg', '.png', '.webp'}
+    allowed_content_types = {'image/jpeg', 'image/png', 'image/webp'}
+    file_name = (uploaded_file.name or '').lower()
+    file_extension = os.path.splitext(file_name)[1]
+    content_type = (getattr(uploaded_file, 'content_type', '') or '').lower()
+
+    if file_extension not in allowed_extensions and content_type not in allowed_content_types:
+        return JsonResponse({'status': 'error', 'message': 'Only JPG, PNG, and WEBP files are allowed.'}, status=400)
+
+    receipt = Receipt.objects.create(
+        user=request.user,
+        image=uploaded_file,
+        processing_status='pending',
+    )
+
+    try:
+        expense = process_receipt(receipt.image.path, request.user)
+
+        cache_key = hashlib.md5(receipt.image.path.encode('utf-8')).hexdigest()
+        cached_payload = cache.get(cache_key) or {}
+
+        receipt.extracted_text = cached_payload.get('extracted_text', '')
+        receipt.raw_ocr_response = cached_payload.get('raw_ocr_response', {})
+        receipt.processing_status = 'success'
+        receipt.save(update_fields=['extracted_text', 'raw_ocr_response', 'processing_status'])
+
+        return JsonResponse({
+            'status': 'success',
+            'expense_id': expense.id,
+            'amount': float(expense.amount),
+            'category': expense.category.name,
+        }, status=200)
+
+    except OCRException:
+        receipt.processing_status = 'failed'
+        receipt.save(update_fields=['processing_status'])
+        return JsonResponse({
+            'status': 'error',
+            'message': 'Could not read the receipt. Please upload a clearer image or type the amount and category manually.',
+        }, status=400)
+
+    except AmountNotFoundException:
+        receipt.processing_status = 'failed'
+        receipt.save(update_fields=['processing_status'])
+        return JsonResponse({
+            'status': 'error',
+            'message': 'Found the receipt but could not detect the total amount. Please reply with the amount to confirm.',
+        }, status=400)
+
+    except AICategoriaztionException:
+        receipt.processing_status = 'failed'
+        receipt.save(update_fields=['processing_status'])
+        return JsonResponse({
+            'status': 'error',
+            'message': 'Could not categorize the receipt automatically. Please enter amount and category manually.',
+        }, status=400)
+
+    except Exception:
+        logger.exception('Unexpected error while processing receipt upload')
+        receipt.processing_status = 'failed'
+        receipt.save(update_fields=['processing_status'])
+        return JsonResponse({
+            'status': 'error',
+            'message': 'Unable to process the receipt right now.',
+        }, status=500)
 

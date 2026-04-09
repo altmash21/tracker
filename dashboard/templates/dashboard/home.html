@@ -1,1543 +1,517 @@
 <!DOCTYPE html>
-<html lang="en">
 
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Expense Tracker - Track Expenses via WhatsApp</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <meta name="facebook-domain-verification" content="xf39zv1awv8h87jwmnwnu80amj23c3" />
-    <style>
-        /* ===== RESET & BASE STYLES ===== */
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            font-family: 'Inter', sans-serif;
-            color: #1f2937;
-            background: #ffffff;
-            line-height: 1.6;
-            overflow-x: hidden;
-        }
-
-        html {
-            scroll-behavior: smooth;
-        }
-
-        /* ===== UTILITY CLASSES ===== */
-        .container {
-            max-width: 1280px;
-            margin: 0 auto;
-            padding: 0 20px;
-        }
-
-        .section {
-            padding: 80px 0;
-        }
-
-        .section-title {
-            font-size: 1.7rem;
-            font-weight: 700;
-            color: #111827;
-            text-align: center;
-            margin-bottom: 14px;
-            letter-spacing: -0.01em;
-        }
-
-        .section-subtitle {
-            font-size: 0.98rem;
-            color: #6b7280;
-            text-align: center;
-            margin-bottom: 36px;
-            max-width: 480px;
-            margin-left: auto;
-            margin-right: auto;
-        }
-
-        .btn {
-            display: inline-block;
-            padding: 8px 18px;
-            border-radius: 6px;
-            font-size: 0.95rem;
-            font-weight: 500;
-            text-decoration: none;
-            border: none;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            font-family: 'Inter', sans-serif;
-        }
-
-        .btn-primary {
-            background: #3b82f6;
-            color: white;
-        }
-
-        .btn-primary:hover {
-            background: #2563eb;
-            transform: translateY(-2px);
-            box-shadow: 0 10px 25px rgba(59, 130, 246, 0.3);
-        }
-
-        .btn-secondary {
-            background: transparent;
-            color: #3b82f6;
-            border: 2px solid #3b82f6;
-        }
-
-        .btn-secondary:hover {
-            background: #3b82f6;
-            color: white;
-        }
-
-        .btn-large {
-            padding: 12px 24px;
-            font-size: 1rem;
-        }
-
-        /* ===== NAVIGATION ===== */
-        nav {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(10px);
-            z-index: 1000;
-            border-bottom: 1px solid #e5e7eb;
-        }
-
-        .nav-container {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 16px 20px;
-            max-width: 1280px;
-            margin: 0 auto;
-        }
-
-        .logo {
-            font-size: 1.1rem;
-            font-weight: 700;
-            color: #111827;
-            text-decoration: none;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .nav-links {
-            display: flex;
-            gap: 24px;
-            list-style: none;
-        }
-
-        .nav-links a {
-            color: #4b5563;
-            text-decoration: none;
-            font-weight: 500;
-            transition: color 0.3s;
-        }
-
-        .nav-links a:hover {
-            color: #3b82f6;
-        }
-
-        .nav-actions {
-            display: flex;
-            gap: 16px;
-            align-items: center;
-        }
-
-        .hamburger {
-            display: none;
-            flex-direction: column;
-            cursor: pointer;
-            gap: 5px;
-        }
-
-        .hamburger span {
-            width: 25px;
-            height: 3px;
-            background: #111827;
-            border-radius: 2px;
-            transition: all 0.3s;
-        }
-
-        /* ===== HERO SECTION ===== */
-        .hero {
-            margin-top: 60px;
-            padding: 40px 0;
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 32px;
-            align-items: center;
-            min-height: calc(100vh - 60px);
-        }
-
-        .hero-content h1 {
-            font-size: 2.1rem;
-            font-weight: 700;
-            color: #111827;
-            line-height: 1.15;
-            margin-bottom: 12px;
-            letter-spacing: -0.01em;
-        }
-
-        .hero-content h1 .highlight {
-            background: linear-gradient(135deg, #3b82f6 0%, #10b981 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-        }
-
-        .hero-content p {
-            font-size: 1rem;
-            color: #6b7280;
-            margin-bottom: 18px;
-            line-height: 1.5;
-        }
-
-        .trust-badges {
-            display: flex;
-            gap: 12px;
-            margin-bottom: 24px;
-            flex-wrap: wrap;
-        }
-
-        .badge {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            font-size: 0.85rem;
-            color: #4b5563;
-        }
-
-        .badge-check {
-            color: #10b981;
-            font-weight: 700;
-        }
-
-        .hero-cta {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 24px;
-        }
-
-        .social-proof {
-            display: flex;
-            align-items: center;
-            gap: 16px;
-        }
-
-        .avatars {
-            display: flex;
-            margin-right: 8px;
-        }
-
-        .avatar {
-            width: 28px;
-            height: 28px;
-            border-radius: 50%;
-            background: linear-gradient(135deg, #3b82f6, #10b981);
-            border: 2px solid white;
-            margin-left: -8px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-weight: 600;
-            font-size: 0.75rem;
-        }
-
-        .avatar:first-child {
-            margin-left: 0;
-        }
-
-        .proof-text {
-            font-size: 0.95rem;
-            color: #4b5563;
-        }
-
-        .proof-text strong {
-            color: #111827;
-            font-weight: 700;
-        }
-
-        /* Phone Mockup */
-        .phone-mockup-container {
-            display: flex;
-            justify-content: center;
-            animation: float 3s ease-in-out infinite;
-        }
-
-        @keyframes float {
-
-            0%,
-            100% {
-                transform: translateY(0px);
-            }
-
-            50% {
-                transform: translateY(-20px);
-            }
-        }
-
-        .phone-mockup {
-            position: relative;
-            width: 240px;
-            height: 480px;
-            background: #000;
-            border-radius: 28px;
-            padding: 8px;
-            box-shadow: 0 12px 32px rgba(0, 0, 0, 0.18);
-        }
-
-        .phone-screen {
-            width: 100%;
-            height: 100%;
-            background: white;
-            border-radius: 22px;
-            overflow: hidden;
-            display: flex;
-            flex-direction: column;
-        }
-
-        .whatsapp-header {
-            background: #075e54;
-            color: white;
-            padding: 8px 10px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            font-size: 0.8rem;
-        }
-
-        .whatsapp-avatar {
-            width: 28px;
-            height: 28px;
-            background: #10b981;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 14px;
-        }
-
-        .whatsapp-title div:first-child {
-            font-weight: 600;
-            font-size: 0.95rem;
-        }
-
-        .whatsapp-title div:last-child {
-            font-size: 0.75rem;
-            opacity: 0.8;
-        }
-
-        .chat-area {
-            flex: 1;
-            background: #e5ddd5;
-            padding: 8px;
-            overflow-y: auto;
-            display: flex;
-            flex-direction: column;
-            gap: 5px;
-        }
-
-        .message {
-            padding: 6px 10px;
-            border-radius: 6px;
-            font-size: 0.78rem;
-            max-width: 80%;
-            word-wrap: break-word;
-            animation: fadeIn 0.4s ease;
-        }
-
-        @keyframes fadeIn {
-            from {
-                opacity: 0;
-                transform: translateY(10px);
-            }
-
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
-        .message-bot {
-            background: white;
-            align-self: flex-start;
-            border-radius: 0 8px 8px 8px;
-            color: #1f2937;
-        }
-
-        .message-user {
-            background: #dcf8c6;
-            align-self: flex-end;
-            border-radius: 8px 0 8px 8px;
-            color: #1f2937;
-        }
-
-        .input-area {
-            background: #f0f0f0;
-            padding: 5px;
-            display: flex;
-            gap: 5px;
-        }
-
-        .chat-input {
-            flex: 1;
-            padding: 7px 10px;
-            border: none;
-            border-radius: 14px;
-            background: white;
-            font-size: 0.78rem;
-            outline: none;
-            font-family: 'Inter', sans-serif;
-        }
-
-        .send-btn {
-            background: #25d366;
-            color: white;
-            border: none;
-            width: 24px;
-            height: 24px;
-            border-radius: 50%;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 12px;
-            transition: all 0.2s;
-        }
-
-        .send-btn:hover {
-            background: #20c65a;
-            transform: scale(1.05);
-        }
-
-        /* ===== STATS BANNER ===== */
-        .stats-banner {
-            background: linear-gradient(135deg, #1f2937 0%, #111827 100%);
-            padding: 60px 0;
-            margin: 40px 0;
-        }
-
-        .stats-grid {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 40px;
-            text-align: center;
-        }
-
-        .stat-card {
-            color: white;
-        }
-
-        .stat-number {
-            font-size: 2.5rem;
-            font-weight: 800;
-            color: #3b82f6;
-            margin-bottom: 8px;
-        }
-
-        .stat-label {
-            font-size: 1rem;
-            color: #d1d5db;
-        }
-
-        /* ===== PROBLEM-SOLUTION ===== */
-        .problem-solution {
-            background: #f9fafb;
-        }
-
-        .ps-grid {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 40px;
-        }
-
-        .ps-card {
-            background: white;
-            padding: 40px;
-            border-radius: 16px;
-            border: 1px solid #e5e7eb;
-            transition: all 0.3s ease;
-        }
-
-        .ps-card:hover {
-            transform: translateY(-4px);
-            box-shadow: 0 12px 24px rgba(0, 0, 0, 0.08);
-            border-color: #3b82f6;
-        }
-
-        .ps-card h3 {
-            font-size: 1.25rem;
-            margin-bottom: 12px;
-            color: #111827;
-        }
-
-        .ps-card-problem {
-            color: #dc2626;
-            font-weight: 600;
-            margin-bottom: 16px;
-            font-size: 0.9rem;
-        }
-
-        .ps-card-solution {
-            color: #10b981;
-            font-weight: 600;
-            font-size: 0.9rem;
-        }
-
-        .ps-card p {
-            color: #6b7280;
-            margin-bottom: 12px;
-        }
-
-        /* ===== HOW IT WORKS ===== */
-        .how-it-works-grid {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 40px;
-            position: relative;
-        }
-
-        .how-step {
-            text-align: center;
-            animation: fadeInUp 0.6s ease forwards;
-            opacity: 0;
-        }
-
-        .how-step:nth-child(1) {
-            animation-delay: 0.1s;
-        }
-
-        .how-step:nth-child(2) {
-            animation-delay: 0.2s;
-        }
-
-        .how-step:nth-child(3) {
-            animation-delay: 0.3s;
-        }
-
-        @keyframes fadeInUp {
-            from {
-                opacity: 0;
-                transform: translateY(30px);
-            }
-
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
-        .step-number {
-            width: 60px;
-            height: 60px;
-            background: linear-gradient(135deg, #3b82f6, #10b981);
-            color: white;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 28px;
-            font-weight: 800;
-            margin: 0 auto 24px;
-        }
-
-        .how-step h3 {
-            font-size: 1.5rem;
-            color: #111827;
-            margin-bottom: 12px;
-        }
-
-        .how-step p {
-            color: #6b7280;
-            margin-bottom: 20px;
-            font-size: 0.95rem;
-        }
-
-        .time-badge {
-            display: inline-block;
-            background: #dcfce7;
-            color: #166534;
-            padding: 6px 16px;
-            border-radius: 20px;
-            font-weight: 600;
-            font-size: 0.85rem;
-        }
-
-        /* ===== FEATURES SHOWCASE ===== */
-        .features-showcase {
-            background: #f9fafb;
-        }
-
-        .features-grid {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 32px;
-        }
-
-        .feature-card {
-            background: white;
-            padding: 32px;
-            border-radius: 16px;
-            border: 1px solid #e5e7eb;
-            transition: all 0.3s ease;
-            text-align: center;
-        }
-
-        .feature-card:hover {
-            transform: translateY(-8px);
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.08);
-            border-color: #3b82f6;
-        }
-
-        .feature-icon {
-            font-size: 3rem;
-            margin-bottom: 16px;
-        }
-
-        .feature-card h3 {
-            font-size: 1.25rem;
-            color: #111827;
-            margin-bottom: 12px;
-        }
-
-        .feature-card p {
-            color: #6b7280;
-            font-size: 0.95rem;
-            line-height: 1.6;
-        }
-
-        /* ===== TESTIMONIALS ===== */
-        .testimonials-section {
-            background: white;
-        }
-
-        .testimonials-grid {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 32px;
-        }
-
-        .testimonial-card {
-            background: #f9fafb;
-            padding: 32px;
-            border-radius: 16px;
-            border: 1px solid #e5e7eb;
-            transition: all 0.3s ease;
-        }
-
-        .testimonial-card:hover {
-            box-shadow: 0 12px 24px rgba(0, 0, 0, 0.08);
-            transform: translateY(-4px);
-        }
-
-        .stars {
-            color: #fbbf24;
-            font-size: 1rem;
-            margin-bottom: 16px;
-        }
-
-        .testimonial-text {
-            color: #111827;
-            font-weight: 500;
-            margin-bottom: 20px;
-            line-height: 1.6;
-        }
-
-        .testimonial-author {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
-
-        .author-avatar {
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            background: linear-gradient(135deg, #3b82f6, #10b981);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-weight: 600;
-        }
-
-        .author-info h4 {
-            color: #111827;
-            font-size: 0.95rem;
-            margin-bottom: 2px;
-        }
-
-        .author-info p {
-            color: #6b7280;
-            font-size: 0.85rem;
-        }
-
-        /* ===== FAQ ===== */
-        .faq-section {
-            background: #f9fafb;
-        }
-
-        .faq-container {
-            max-width: 800px;
-            margin: 0 auto;
-        }
-
-        .faq-item {
-            background: white;
-            margin-bottom: 16px;
-            border: 1px solid #e5e7eb;
-            border-radius: 12px;
-            overflow: hidden;
-        }
-
-        .faq-question {
-            padding: 20px;
-            cursor: pointer;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            font-weight: 600;
-            color: #111827;
-            transition: background 0.3s;
-        }
-
-        .faq-question:hover {
-            background: #f3f4f6;
-        }
-
-        .faq-toggle {
-            font-size: 1.5rem;
-            transition: transform 0.3s;
-        }
-
-        .faq-item.active .faq-toggle {
-            transform: rotate(45deg);
-        }
-
-        .faq-answer {
-            max-height: 0;
-            overflow: hidden;
-            transition: max-height 0.3s ease;
-        }
-
-        .faq-item.active .faq-answer {
-            max-height: 500px;
-        }
-
-        .faq-answer p {
-            padding: 0 20px 20px;
-            color: #6b7280;
-            line-height: 1.6;
-        }
-
-        /* ===== FINAL CTA ===== */
-        .final-cta {
-            background: linear-gradient(135deg, #3b82f6 0%, #10b981 100%);
-            color: white;
-            text-align: center;
-            padding: 100px 20px;
-        }
-
-        .final-cta h2 {
-            font-size: 2.5rem;
-            font-weight: 800;
-            margin-bottom: 16px;
-        }
-
-        .final-cta p {
-            font-size: 1.25rem;
-            margin-bottom: 40px;
-            opacity: 0.9;
-        }
-
-        .final-cta .btn-primary {
-            background: white;
-            color: #3b82f6;
-        }
-
-        .final-cta .btn-primary:hover {
-            background: #f3f4f6;
-        }
-
-        /* ===== FOOTER ===== */
-        footer {
-            background: #1f2937;
-            color: #d1d5db;
-            padding: 60px 0 20px;
-        }
-
-        .footer-grid {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 40px;
-            margin-bottom: 40px;
-        }
-
-        .footer-column h4 {
-            color: white;
-            font-size: 1rem;
-            margin-bottom: 16px;
-            font-weight: 600;
-        }
-
-        .footer-column ul {
-            list-style: none;
-        }
-
-        .footer-column ul li {
-            margin-bottom: 12px;
-        }
-
-        .footer-column a {
-            color: #d1d5db;
-            text-decoration: none;
-            transition: color 0.3s;
-            font-size: 0.95rem;
-        }
-
-        .footer-column a:hover {
-            color: white;
-        }
-
-        .footer-bottom {
-            border-top: 1px solid #374151;
-            padding-top: 20px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .status {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            font-size: 0.9rem;
-        }
-
-        .status-dot {
-            width: 8px;
-            height: 8px;
-            background: #10b981;
-            border-radius: 50%;
-        }
-
-        .social-icons {
-            display: flex;
-            gap: 16px;
-        }
-
-        .social-icon {
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            background: #374151;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            text-decoration: none;
-            transition: all 0.3s;
-        }
-
-        .social-icon:hover {
-            background: #3b82f6;
-            transform: translateY(-4px);
-        }
-
-        /* ===== RESPONSIVE ===== */
-        @media (max-width: 1024px) {
-            .hero {
-                grid-template-columns: 1fr;
-                gap: 40px;
-            }
-
-            .stats-grid {
-                grid-template-columns: repeat(2, 1fr);
-                gap: 20px;
-            }
-
-            .ps-grid,
-            .features-grid,
-            .testimonials-grid,
-            .how-it-works-grid {
-                grid-template-columns: 1fr;
-            }
-
-            .footer-grid {
-                grid-template-columns: repeat(2, 1fr);
-            }
-        }
-
-        @media (max-width: 768px) {
-            .nav-links {
-                display: none;
-            }
-
-            .hamburger {
-                display: flex;
-            }
-
-            .section-title {
-                font-size: 2rem;
-            }
-
-            .hero-content h1 {
-                font-size: 2.5rem;
-            }
-
-            .hero-content p {
-                font-size: 1rem;
-            }
-
-            .hero-cta {
-                flex-direction: column;
-            }
-
-            .phone-mockup {
-                width: 280px;
-                height: 560px;
-            }
-
-            .hero {
-                margin-top: 60px;
-                min-height: auto;
-                padding: 40px 0;
-            }
-
-            .trust-badges {
-                flex-direction: column;
-                gap: 12px;
-            }
-
-            .social-proof {
-                flex-direction: column;
-            }
-
-            .footer-grid {
-                grid-template-columns: 1fr;
-            }
-
-            .footer-bottom {
-                flex-direction: column;
-                gap: 20px;
-                text-align: center;
-            }
-
-            .final-cta h2 {
-                font-size: 1.75rem;
-            }
-
-            .final-cta p {
-                font-size: 1rem;
-            }
-
-            .stat-number {
-                font-size: 2rem;
-            }
-        }
-
-        @media (max-width: 480px) {
-            .container {
-                padding: 0 16px;
-            }
-
-            .section {
-                padding: 50px 0;
-            }
-
-            .hero-content h1 {
-                font-size: 2rem;
-            }
-
-            .section-title {
-                font-size: 1.75rem;
-            }
-
-            .stats-grid {
-                grid-template-columns: 1fr;
-                gap: 12px;
-            }
-        }
-
-        /* ===== SCROLL ANIMATIONS ===== */
-        .fade-in {
-            opacity: 0;
-            animation: fadeInUp 0.6s ease forwards;
-        }
-
-        .counter {
-            font-feature-settings: 'tnum';
+<html class="scroll-smooth" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Track Expenses via WhatsApp - Free Expense Tracker India | XPENSEDIARY</title>
+<meta content="Track expenses via WhatsApp instantly. No app needed. Free forever for Indians. Text '₹120 food' and get instant insights." name="description"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "inverse-surface": "#2e3132",
+                        "surface": "#f8f9fb",
+                        "on-primary-fixed": "#00164e",
+                        "secondary": "#006d2f",
+                        "primary": "#00236f",
+                        "tertiary-fixed-dim": "#4edea3",
+                        "on-tertiary-fixed": "#002113",
+                        "outline-variant": "#c5c5d3",
+                        "tertiary-fixed": "#6ffbbe",
+                        "on-primary-fixed-variant": "#264191",
+                        "on-secondary-container": "#007232",
+                        "secondary-fixed": "#66ff8e",
+                        "tertiary": "#00311f",
+                        "tertiary-container": "#004a31",
+                        "surface-dim": "#d9dadc",
+                        "outline": "#757682",
+                        "on-secondary": "#ffffff",
+                        "secondary-fixed-dim": "#3de273",
+                        "surface-container-high": "#e7e8ea",
+                        "surface-container-highest": "#e1e2e4",
+                        "on-primary-container": "#90a8ff",
+                        "surface-container-lowest": "#ffffff",
+                        "primary-container": "#1e3a8a",
+                        "on-primary": "#ffffff",
+                        "surface-variant": "#e1e2e4",
+                        "background": "#f8f9fb",
+                        "secondary-container": "#5dfd8a",
+                        "inverse-on-surface": "#f0f1f3",
+                        "on-secondary-fixed-variant": "#005322",
+                        "inverse-primary": "#b6c4ff",
+                        "on-error": "#ffffff",
+                        "on-tertiary-container": "#27c38a",
+                        "on-background": "#191c1e",
+                        "primary-fixed-dim": "#b6c4ff",
+                        "surface-container-low": "#f3f4f6",
+                        "on-secondary-fixed": "#002109",
+                        "on-surface-variant": "#444651",
+                        "error": "#ba1a1a",
+                        "on-error-container": "#93000a",
+                        "surface-container": "#edeef0",
+                        "on-surface": "#191c1e",
+                        "primary-fixed": "#dce1ff",
+                        "error-container": "#ffdad6",
+                        "surface-tint": "#4059aa",
+                        "on-tertiary-fixed-variant": "#005236",
+                        "on-tertiary": "#ffffff",
+                        "surface-bright": "#f8f9fb"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "fontFamily": {
+                        "headline": ["Inter"],
+                        "body": ["Inter"],
+                        "label": ["Inter"]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .glass-header {
+            background: rgba(248, 249, 251, 0.8);
+            backdrop-filter: blur(20px);
         }
     </style>
-</head>
-
-<body>
-    <!-- NAVIGATION -->
-    <nav>
-        <div class="nav-container container">
-            <a href="#" class="logo">💰 Expense Tracker</a>
-            <ul class="nav-links">
-                <li><a href="#features">Features</a></li>
-                <li><a href="#how-it-works">How It Works</a></li>
-                <li><a href="#pricing">Pricing</a></li>
-                <li><a href="#faq">FAQ</a></li>
-            </ul>
-            <div class="nav-actions">
-                <a href="/login/" class="btn btn-secondary">Login</a>
-                <a href="/register/" class="btn btn-primary">Get Started</a>
-            </div>
-            <div class="hamburger">
-                <span></span>
-                <span></span>
-                <span></span>
-            </div>
-        </div>
-    </nav>
-
-    <!-- HERO SECTION -->
-    <section class="hero container">
-        <div class="hero-content">
-            <h1>Track expenses via <span class="highlight">WhatsApp</span> in 2 seconds</h1>
-            <p>Just text "120 food lunch" to WhatsApp. We automatically categorize it, add it to your dashboard, and
-                show you where your money goes—instantly.</p>
-
-            <div class="trust-badges">
-                <div class="badge"><span class="badge-check">✓</span> Free Forever</div>
-                <div class="badge"><span class="badge-check">✓</span> No Credit Card</div>
-                <div class="badge"><span class="badge-check">✓</span> 2 Min Setup</div>
-            </div>
-
-            <div class="hero-cta">
-                <a href="/register/" class="btn btn-primary btn-large">Get Started Free</a>
-                <button class="btn btn-secondary btn-large" onclick="alert('Demo video coming soon!')">Watch
-                    Demo</button>
-            </div>
-
-            <div class="social-proof">
-                <div class="avatars">
-                    <div class="avatar">A</div>
-                    <div class="avatar">B</div>
-                    <div class="avatar">C</div>
-                </div>
-                <div class="proof-text"><strong>1,000+</strong> users tracking their finances</div>
-            </div>
-        </div>
-
-        <!-- PHONE MOCKUP -->
-        <div class="phone-mockup-container">
-            <div class="phone-mockup">
-                <div class="phone-screen">
-                    <div class="whatsapp-header">
-                        <div class="whatsapp-avatar">💰</div>
-                        <div class="whatsapp-title">
-                            <div>Expense Tracker</div>
-                            <div>online</div>
-                        </div>
-                    </div>
-                    <div class="chat-area" id="chatArea">
-                        <div class="message message-bot">Hi! Text an expense like "120 food lunch" 👇</div>
-                    </div>
-                    <div class="input-area">
-                        <input type="text" class="chat-input" id="chatInput" placeholder="Type a message..."
-                            value="120 food lunch">
-                        <button class="send-btn" id="sendBtn">→</button>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- STATS BANNER -->
-    <div class="stats-banner">
-        <div class="container">
-            <div class="stats-grid">
-                <div class="stat-card">
-                    <div class="stat-number counter" data-target="1000">0</div>
-                    <div class="stat-label">Active Users</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-number counter" data-target="50000">0</div>
-                    <div class="stat-label">Expenses Tracked</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-number">2s</div>
-                    <div class="stat-label">To Log Expense</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-number">4.9<span style="font-size: 1.5rem;">★</span></div>
-                    <div class="stat-label">User Rating</div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- PROBLEM-SOLUTION -->
-    <section class="section problem-solution">
-        <div class="container">
-            <h2 class="section-title">Tired of These Problems?</h2>
-            <p class="section-subtitle">We've solved them all</p>
-            <div class="ps-grid">
-                <div class="ps-card">
-                    <div class="ps-card-problem">❌ Problem</div>
-                    <h3>Forgetting to log expenses</h3>
-                    <p>You spend money all day but never remember to track it.</p>
-                    <div class="ps-card-solution">✓ Solution: Just text WhatsApp anytime</div>
-                </div>
-                <div class="ps-card">
-                    <div class="ps-card-problem">❌ Problem</div>
-                    <h3>Too many apps to install</h3>
-                    <p>Another app cluttering your phone with notifications.</p>
-                    <div class="ps-card-solution">✓ Solution: Use WhatsApp you already have</div>
-                </div>
-                <div class="ps-card">
-                    <div class="ps-card-problem">❌ Problem</div>
-                    <h3>Complicated forms</h3>
-                    <p>Tracking expenses feels like filing taxes.</p>
-                    <div class="ps-card-solution">✓ Solution: Simple as texting a friend</div>
-                </div>
-                <div class="ps-card">
-                    <div class="ps-card-problem">❌ Problem</div>
-                    <h3>Never knowing where money goes</h3>
-                    <p>Mystery money: you spend it, but where?</p>
-                    <div class="ps-card-solution">✓ Solution: Instant reports & insights</div>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- HOW IT WORKS -->
-    <section class="section" id="how-it-works">
-        <div class="container">
-            <h2 class="section-title">As Easy As 1-2-3</h2>
-            <p class="section-subtitle">No learning curve. Just text.</p>
-            <div class="how-it-works-grid">
-                <div class="how-step">
-                    <div class="step-number">1</div>
-                    <h3>Text Your Expense</h3>
-                    <p>Send any message like "120 petrol" or "50 coffee" to WhatsApp</p>
-                    <span class="time-badge">Takes 2 seconds</span>
-                </div>
-                <div class="how-step">
-                    <div class="step-number">2</div>
-                    <h3>We Track It</h3>
-                    <p>Automatically categorized, saved, and added to your dashboard</p>
-                    <span class="time-badge">Instant</span>
-                </div>
-                <div class="how-step">
-                    <div class="step-number">3</div>
-                    <h3>View Insights</h3>
-                    <p>Ask "today" or "summary" for reports. Or visit your dashboard anytime</p>
-                    <span class="time-badge">Real-time</span>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- FEATURES SHOWCASE -->
-    <section class="section features-showcase" id="features">
-        <div class="container">
-            <h2 class="section-title">Everything You Need, Nothing You Don't</h2>
-            <p class="section-subtitle">Powerful features designed for simplicity</p>
-            <div class="features-grid">
-                <div class="feature-card">
-                    <div class="feature-icon">📱</div>
-                    <h3>Smart WhatsApp Integration</h3>
-                    <p>No new app. No new phone number. Just WhatsApp.</p>
-                </div>
-                <div class="feature-card">
-                    <div class="feature-icon">💰</div>
-                    <h3>All Expenses in One Place</h3>
-                    <p>View all your spending across categories in a beautiful dashboard.</p>
-                </div>
-                <div class="feature-card">
-                    <div class="feature-icon">📊</div>
-                    <h3>Visual Reports & Insights</h3>
-                    <p>See where your money goes with charts and breakdowns.</p>
-                </div>
-                <div class="feature-card">
-                    <div class="feature-icon">🏷️</div>
-                    <h3>Auto-Categorization</h3>
-                    <p>AI learns your spending. Expenses are correctly categorized automatically.</p>
-                </div>
-                <div class="feature-card">
-                    <div class="feature-icon">🔒</div>
-                    <h3>Bank-Level Security</h3>
-                    <p>Your financial data is encrypted. We never share your information.</p>
-                </div>
-                <div class="feature-card">
-                    <div class="feature-icon">⚡</div>
-                    <h3>Real-Time Sync</h3>
-                    <p>Updates instantly across all your devices.</p>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- TESTIMONIALS -->
-    <section class="section testimonials-section">
-        <div class="container">
-            <h2 class="section-title">Loved By Users Like You</h2>
-            <p class="section-subtitle">See what people are saying</p>
-            <div class="testimonials-grid">
-                <div class="testimonial-card">
-                    <div class="stars">★★★★★</div>
-                    <p class="testimonial-text">"Finally, a way to track expenses that doesn't feel like work. I just
-                        text and it's done!"</p>
-                    <div class="testimonial-author">
-                        <div class="author-avatar">SA</div>
-                        <div class="author-info">
-                            <h4>Sarah Ahmed</h4>
-                            <p>Mumbai, India</p>
-                        </div>
-                    </div>
-                </div>
-                <div class="testimonial-card">
-                    <div class="stars">★★★★★</div>
-                    <p class="testimonial-text">"Saved me so much time. No more spreadsheets. Just WhatsApp and it's all
-                        tracked."</p>
-                    <div class="testimonial-author">
-                        <div class="author-avatar">RP</div>
-                        <div class="author-info">
-                            <h4>Raj Patel</h4>
-                            <p>Bangalore, India</p>
-                        </div>
-                    </div>
-                </div>
-                <div class="testimonial-card">
-                    <div class="stars">★★★★★</div>
-                    <p class="testimonial-text">"I finally understand my spending. The reports are eye-opening. Highly
-                        recommend!"</p>
-                    <div class="testimonial-author">
-                        <div class="author-avatar">PK</div>
-                        <div class="author-info">
-                            <h4>Priya Kadam</h4>
-                            <p>Delhi, India</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- FAQ -->
-    <section class="section faq-section" id="faq">
-        <div class="container">
-            <h2 class="section-title">Quick Questions</h2>
-            <p class="section-subtitle">Everything you need to know</p>
-            <div class="faq-container">
-                <div class="faq-item">
-                    <div class="faq-question">
-                        <span>Do I need to download an app?</span>
-                        <span class="faq-toggle">+</span>
-                    </div>
-                    <div class="faq-answer">
-                        <p>Nope! Just use WhatsApp that you already have. No app downloads, no accounts to create. It's
-                            that simple.</p>
-                    </div>
-                </div>
-                <div class="faq-item">
-                    <div class="faq-question">
-                        <span>Is my data really secure?</span>
-                        <span class="faq-toggle">+</span>
-                    </div>
-                    <div class="faq-answer">
-                        <p>Yes. We use bank-level encryption (256-bit SSL) and never share your data with third parties.
-                            Your financial information is completely private.</p>
-                    </div>
-                </div>
-                <div class="faq-item">
-                    <div class="faq-question">
-                        <span>What if I don't have WhatsApp?</span>
-                        <span class="faq-toggle">+</span>
-                    </div>
-                    <div class="faq-answer">
-                        <p>You can still use our web dashboard to log expenses manually. But we recommend WhatsApp for
-                            the fastest experience.</p>
-                    </div>
-                </div>
-                <div class="faq-item">
-                    <div class="faq-question">
-                        <span>Is it really free forever?</span>
-                        <span class="faq-toggle">+</span>
-                    </div>
-                    <div class="faq-answer">
-                        <p>Yes, completely free. No hidden charges. No premium upgrade. We're building this for
-                            everyone.</p>
-                    </div>
-                </div>
-                <div class="faq-item">
-                    <div class="faq-question">
-                        <span>Can I export my data?</span>
-                        <span class="faq-toggle">+</span>
-                    </div>
-                    <div class="faq-answer">
-                        <p>Yes! Export as CSV or PDF anytime. Your data belongs to you. You can download it or delete it
-                            whenever you want.</p>
-                    </div>
-                </div>
-                <div class="faq-item">
-                    <div class="faq-question">
-                        <span>How does auto-categorization work?</span>
-                        <span class="faq-toggle">+</span>
-                    </div>
-                    <div class="faq-answer">
-                        <p>Our AI learns from your patterns. Just mention the amount and category (e.g., "120 food") and
-                            we remember it. Next time, we auto-categorize similar expenses.</p>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- FINAL CTA -->
-    <section class="final-cta" id="pricing">
-        <div class="container">
-            <h2>Ready to Take Control of Your Expenses?</h2>
-            <p>Start tracking in the next 2 minutes. Free forever.</p>
-            <a href="/register/" class="btn btn-primary btn-large">Get Started
-                Free</button>
-            <div style="margin-top: 40px; display: flex; justify-content: center; gap: 32px; flex-wrap: wrap;">
-                <div style="display: flex; align-items: center; gap: 8px; color: rgba(255,255,255,0.9);">
-                    <span>✓</span> <span>No credit card required</span>
-                </div>
-                <div style="display: flex; align-items: center; gap: 8px; color: rgba(255,255,255,0.9);">
-                    <span>✓</span> <span>Free forever</span>
-                </div>
-                <div style="display: flex; align-items: center; gap: 8px; color: rgba(255,255,255,0.9);">
-                    <span>✓</span> <span>No spam emails</span>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- FOOTER -->
-    <footer>
-        <div class="container">
-            <div class="footer-grid">
-                <div class="footer-column">
-                    <h4>Product</h4>
-                    <ul>
-                        <li><a href="#">Dashboard</a></li>
-                        <li><a href="#">Features</a></li>
-                        <li><a href="#">Pricing</a></li>
-                        <li><a href="#">API</a></li>
-                    </ul>
-                </div>
-                <div class="footer-column">
-                    <h4>Support</h4>
-                    <ul>
-                        <li><a href="#">Help Center</a></li>
-                        <li><a href="#">Contact Us</a></li>
-                        <li><a href="#">FAQ</a></li>
-                        <li><a href="#">Status</a></li>
-                    </ul>
-                </div>
-                <div class="footer-column">
-                    <h4>Legal</h4>
-                    <ul>
-                        <li><a href="#">Terms</a></li>
-                        <li><a href="#">Privacy Policy</a></li>
-                        <li><a href="#">Cookies</a></li>
-                    </ul>
-                </div>
-                <div class="footer-column">
-                    <h4>Company</h4>
-                    <ul>
-                        <li><a href="#">About</a></li>
-                        <li><a href="#">Blog</a></li>
-                        <li><a href="#">Careers</a></li>
-                        <li><a href="#">Contact</a></li>
-                    </ul>
-                </div>
-            </div>
-            <div class="footer-bottom">
-                <div class="status">
-                    <span class="status-dot"></span>
-                    <span>All Systems Operational</span>
-                </div>
-                <div style="color: #9ca3af;">© 2026 Techspark. All rights reserved.</div>
-                <div class="social-icons">
-                    <a href="#" class="social-icon">f</a>
-                    <a href="#" class="social-icon">𝕏</a>
-                    <a href="#" class="social-icon">in</a>
-                </div>
-            </div>
-        </div>
-    </footer>
-
-    <script>
-        // ===== INTERACTIVE WHATSAPP DEMO =====
-        const chatArea = document.getElementById('chatArea');
-        const chatInput = document.getElementById('chatInput');
-        const sendBtn = document.getElementById('sendBtn');
-
-        // Demo responses
-        const demoResponses = {
-            'help': 'Commands: today | week | month | summary | categories',
-            'today': '📊 Today: Food ₹220, Travel ₹50, Coffee ₹80. Total: ₹350',
-            'week': '📊 This Week: ₹2,450 tracked across 5 categories',
-            'month': '📊 This Month: ₹8,920 tracked. Top: Food (34%), Travel (28%)',
-            'summary': '💰 Monthly Summary:\n• Total: ₹8,920\n• Food: ₹3,050\n• Travel: ₹2,497\n• Other: ₹3,373',
-            'categories': '📂 Your Categories: Food, Travel, Shopping, Entertainment, Health, Utilities'
-        };
-
-        // Parse expense input
-        function parseExpense(input) {
-            const match = input.match(/^(\d+)\s+(\w+)(.*)$/);
-            if (match) {
-                const amount = match[1];
-                const category = match[2].toLowerCase();
-                const description = match[3].trim();
-
-                const categoryEmojis = {
-                    'food': '🍔', 'coffee': '☕', 'travel': '🚗', 'petrol': '⛽',
-                    'shopping': '🛍️', 'entertainment': '🎬', 'health': '💊', 'utilities': '🏠'
-                };
-
-                const emoji = categoryEmojis[category] || '💰';
-                return `✅ Logged: ₹${amount} ${emoji} ${category.charAt(0).toUpperCase() + category.slice(1)}${description ? ' - ' + description : ''}\n\nText "today" for daily summary!`;
-            }
-            return null;
-        }
-
-        function sendMessage() {
-            const message = chatInput.value.trim();
-            if (!message) return;
-
-            // Add user message
-            const userMsg = document.createElement('div');
-            userMsg.className = 'message message-user';
-            userMsg.textContent = message;
-            chatArea.appendChild(userMsg);
-
-            chatInput.value = '';
-
-            // Get response
-            setTimeout(() => {
-                const botMsg = document.createElement('div');
-                botMsg.className = 'message message-bot';
-
-                const input = message.toLowerCase();
-                let response = demoResponses[input] || parseExpense(message) ||
-                    '🤔 Try: "120 food lunch" or type "help"';
-
-                botMsg.textContent = response;
-                chatArea.appendChild(botMsg);
-                chatArea.scrollTop = chatArea.scrollHeight;
-            }, 500);
-        }
-
-        sendBtn.addEventListener('click', sendMessage);
-        chatInput.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') sendMessage();
-        });
-
-        // ===== SCROLL ANIMATIONS =====
-        const observerOptions = {
-            threshold: 0.1,
-            rootMargin: '0px 0px -50px 0px'
-        };
-
-        const observer = new IntersectionObserver((entries) => {
-            entries.forEach(entry => {
-                if (entry.isIntersecting) {
-                    entry.target.classList.add('fade-in');
-                    observer.unobserve(entry.target);
-                }
-            });
-        }, observerOptions);
-
-        document.querySelectorAll('.feature-card, .ps-card, .testimonial-card').forEach(el => {
-            observer.observe(el);
-        });
-
-        // ===== COUNTER ANIMATION =====
-        function animateCounter(element) {
-            const target = parseInt(element.getAttribute('data-target'));
-            const duration = 2000;
-            const start = 0;
-            const startTime = performance.now();
-
-            function update(currentTime) {
-                const elapsed = currentTime - startTime;
-                const progress = Math.min(elapsed / duration, 1);
-                const current = Math.floor(start + (target - start) * progress);
-                element.textContent = current.toLocaleString();
-
-                if (progress < 1) {
-                    requestAnimationFrame(update);
-                }
-            }
-
-            requestAnimationFrame(update);
-        }
-
-        const counterObserver = new IntersectionObserver((entries) => {
-            entries.forEach(entry => {
-                if (entry.isIntersecting) {
-                    animateCounter(entry.target);
-                    counterObserver.unobserve(entry.target);
-                }
-            });
-        }, { threshold: 0.5 });
-
-        document.querySelectorAll('.counter').forEach(el => {
-            counterObserver.observe(el);
-        });
-
-        // ===== FAQ ACCORDION =====
-        document.querySelectorAll('.faq-question').forEach(question => {
-            question.addEventListener('click', () => {
-                const item = question.parentElement;
-                const allItems = document.querySelectorAll('.faq-item');
-
-                allItems.forEach(i => {
-                    if (i !== item && i.classList.contains('active')) {
-                        i.classList.remove('active');
-                    }
-                });
-
-                item.classList.toggle('active');
-            });
-        });
-
-        // ===== SMOOTH SCROLL =====
-        function scrollTo(selector) {
-            const element = document.querySelector(selector);
-            if (element) {
-                element.scrollIntoView({ behavior: 'smooth' });
-            }
-        }
-
-        window.scrollTo = scrollTo;
-
-        // ===== MOBILE MENU =====
-        const hamburger = document.querySelector('.hamburger');
-        const navLinks = document.querySelector('.nav-links');
-
-        hamburger.addEventListener('click', () => {
-            navLinks.style.display = navLinks.style.display === 'flex' ? 'none' : 'flex';
-        });
-
-        // ===== SCROLL NAV EFFECT =====
-        window.addEventListener('scroll', () => {
-            const nav = document.querySelector('nav');
-            if (window.scrollY > 50) {
-                nav.style.boxShadow = '0 4px 12px rgba(0,0,0,0.1)';
-            } else {
-                nav.style.boxShadow = 'none';
-            }
-        });
+<!-- JSON-LD SoftwareApplication Schema -->
+<script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "SoftwareApplication",
+      "name": "XPENSEDIARY",
+      "operatingSystem": "WhatsApp",
+      "applicationCategory": "FinanceApplication",
+      "offers": {
+        "@type": "Offer",
+        "price": "0",
+        "priceCurrency": "INR"
+      },
+      "aggregateRating": {
+        "@type": "AggregateRating",
+        "ratingValue": "4.9",
+        "reviewCount": "1000"
+      }
+    }
     </script>
-</body>
-
-</html>
+<!-- JSON-LD LocalBusiness Schema -->
+<script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "LocalBusiness",
+      "name": "XPENSEDIARY India",
+      "image": "https://lh3.googleusercontent.com/aida-public/AB6AXuCF072aq8CxLWboXcgYIO4HiNgnzs0FavPYbW1X4xFxrwV0oapmPxT_0BOPhlzZRQuoIgkeJ7Ffsz6t31nTv9O7Y3APcu4YvsWMe10k11IXTq7Tctj2tIetZjTvjJfI0aRah2b01_l0IAVMnno381rS_Lf94UBSvVCx-KggLmDGRgsQwWFz01yAGp1vwBRCDVMCFqRGmG0CzPkue7GydicKiPwmOSTF3rtKUEVNrXlzTgyw1Qgr7aNE6MmXlV-UH52IajV96HnrKwY",
+      "@id": "",
+      "url": "https://xpensediary.in",
+      "telephone": "",
+      "address": {
+        "@type": "PostalAddress",
+        "streetAddress": "",
+        "addressLocality": "Bangalore",
+        "addressRegion": "KA",
+        "postalCode": "560001",
+        "addressCountry": "IN"
+      }
+    }
+    </script>
+</head>
+<body class="bg-surface font-body text-on-surface">
+<!-- TopNavBar -->
+<nav class="fixed top-0 w-full z-50 glass-header shadow-sm">
+<div class="flex items-center justify-between px-6 py-4 max-w-7xl mx-auto">
+<div class="text-xl font-bold tracking-tighter text-blue-900">XPENSEDIARY</div>
+<div class="hidden md:flex items-center gap-8">
+<a class="text-slate-600 hover:text-blue-900 transition-all font-inter text-sm" href="#features">Features</a>
+<a class="text-slate-600 hover:text-blue-900 transition-all font-inter text-sm" href="#how-it-works">How it Works</a>
+<a class="text-slate-600 hover:text-blue-900 transition-all font-inter text-sm" href="#pricing">Pricing</a>
+</div>
+<div class="flex items-center gap-4">
+<button class="text-slate-600 font-medium hover:opacity-80 transition-all scale-95 active:scale-90 px-4 py-2">Login</button>
+<button class="bg-gradient-to-br from-primary to-primary-container text-white px-6 py-2.5 rounded-lg font-semibold hover:opacity-90 transition-all scale-95 active:scale-90">Get Started</button>
+</div>
+</div>
+</nav>
+<!-- Hero Section -->
+<section class="pt-32 pb-20 px-6 overflow-hidden">
+<div class="max-w-7xl mx-auto flex flex-col md:flex-row items-center gap-12 lg:gap-20">
+<div class="flex-1 text-center md:text-left">
+<span class="inline-block px-4 py-1 rounded-full bg-secondary-container text-on-secondary-container text-xs font-bold tracking-widest uppercase mb-6">NO APP DOWNLOAD REQUIRED</span>
+<h1 class="text-5xl lg:text-7xl font-bold tracking-tight text-on-surface mb-8 leading-[1.1]">
+                    Track Expenses via WhatsApp - <span class="text-primary">Free Expense Tracker India</span>
+</h1>
+<p class="text-xl text-on-surface-variant mb-10 max-w-xl leading-relaxed">
+                    Track your daily spends in just <span class="font-bold text-primary">2 seconds</span>. Text <span class="font-mono bg-surface-container px-2 py-1 rounded">"₹120 food lunch"</span> → instantly categorized → dashboard updated. Effortless financial clarity without ever leaving WhatsApp.
+                </p>
+<div class="flex flex-col sm:flex-row items-center gap-4 justify-center md:justify-start">
+<button class="w-full sm:w-auto bg-gradient-to-br from-primary to-primary-container text-white px-8 py-4 rounded-lg font-bold text-lg hover:opacity-90 transition-all shadow-xl shadow-primary/10">Get Started for Free</button>
+<button class="w-full sm:w-auto flex items-center justify-center gap-2 text-primary font-bold px-8 py-4 rounded-lg hover:bg-surface-container-high transition-all">
+<span class="material-symbols-outlined">play_circle</span>
+                        Watch Demo
+                    </button>
+</div>
+</div>
+<div class="flex-1 relative">
+<div class="relative z-10 rounded-3xl overflow-hidden shadow-2xl border-[8px] border-on-surface">
+<img alt="WhatsApp Interface for India" class="w-full h-auto" data-alt="close up of a person using a smartphone showing a modern WhatsApp interface with financial tracking messages like ₹120 lunch and green bubble accents" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCF072aq8CxLWboXcgYIO4HiNgnzs0FavPYbW1X4xFxrwV0oapmPxT_0BOPhlzZRQuoIgkeJ7Ffsz6t31nTv9O7Y3APcu4YvsWMe10k11IXTq7Tctj2tIetZjTvjJfI0aRah2b01_l0IAVMnno381rS_Lf94UBSvVCx-KggLmDGRgsQwWFz01yAGp1vwBRCDVMCFqRGmG0CzPkue7GydicKiPwmOSTF3rtKUEVNrXlzTgyw1Qgr7aNE6MmXlV-UH52IajV96HnrKwY"/>
+</div>
+<div class="absolute -top-10 -right-10 w-40 h-40 bg-secondary-container/30 rounded-full blur-3xl"></div>
+<div class="absolute -bottom-10 -left-10 w-40 h-40 bg-primary/10 rounded-full blur-3xl"></div>
+</div>
+</div>
+</section>
+<!-- Trust Signals -->
+<section class="bg-surface-container-low py-12 px-6">
+<div class="max-w-7xl mx-auto">
+<div class="grid grid-cols-1 md:grid-cols-3 gap-8 md:gap-4 items-center">
+<div class="text-center">
+<div class="text-4xl font-extrabold text-primary mb-1 tracking-tighter">5,000+</div>
+<div class="text-on-surface-variant font-label text-sm uppercase tracking-wider">Active Indian Users</div>
+</div>
+<div class="text-center md:border-x border-outline-variant/20">
+<div class="text-4xl font-extrabold text-primary mb-1 tracking-tighter">2,50,000+</div>
+<div class="text-on-surface-variant font-label text-sm uppercase tracking-wider">₹ Tracked to Date</div>
+</div>
+<div class="text-center">
+<div class="flex justify-center items-center gap-1 text-secondary mb-1">
+<span class="text-4xl font-extrabold tracking-tighter">4.9/5</span>
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">star</span>
+</div>
+<div class="text-on-surface-variant font-label text-sm uppercase tracking-wider">Play Store Quality Rating</div>
+</div>
+</div>
+</div>
+</section>
+<!-- localization section -->
+<section class="py-20 px-6 bg-white">
+<div class="max-w-7xl mx-auto">
+<div class="bg-surface-container-low rounded-3xl p-10 md:p-16 border border-outline-variant/10">
+<div class="flex flex-col md:flex-row gap-12 items-center">
+<div class="flex-1">
+<span class="text-secondary font-bold text-sm tracking-widest uppercase mb-4 block">Tailored for India</span>
+<h2 class="text-4xl font-bold tracking-tight mb-6">Best Expense Tracker for India (Rupee Support)</h2>
+<p class="text-on-surface-variant text-lg mb-8">XPENSEDIARY is designed to handle the fast-paced Indian lifestyle. Whether it's a quick <span class="font-bold">UPI payment</span> at a chai stall or your monthly <span class="font-bold">Zomato</span> and <span class="font-bold">Uber</span> bills, we've got you covered.</p>
+<ul class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+<li class="flex items-center gap-3">
+<span class="material-symbols-outlined text-secondary">check_circle</span>
+<span>Track Petrol &amp; Commute</span>
+</li>
+<li class="flex items-center gap-3">
+<span class="material-symbols-outlined text-secondary">check_circle</span>
+<span>Zomato &amp; Swiggy Spends</span>
+</li>
+<li class="flex items-center gap-3">
+<span class="material-symbols-outlined text-secondary">check_circle</span>
+<span>Domestic Rupee Support</span>
+</li>
+<li class="flex items-center gap-3">
+<span class="material-symbols-outlined text-secondary">check_circle</span>
+<span>Monthly Rent &amp; Bills</span>
+</li>
+</ul>
+</div>
+<div class="flex-1 grid grid-cols-2 gap-4">
+<div class="bg-white p-6 rounded-2xl shadow-sm border border-outline-variant/10 text-center">
+<div class="text-3xl font-bold text-primary mb-1">₹0</div>
+<div class="text-xs text-on-surface-variant font-bold uppercase">Setup Fees</div>
+</div>
+<div class="bg-white p-6 rounded-2xl shadow-sm border border-outline-variant/10 text-center">
+<div class="text-3xl font-bold text-secondary mb-1">100%</div>
+<div class="text-xs text-on-surface-variant font-bold uppercase">Private</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- Problem/Solution Bento -->
+<section class="py-24 px-6 bg-surface">
+<div class="max-w-7xl mx-auto">
+<div class="flex flex-col md:flex-row justify-between items-end mb-16 gap-4">
+<div class="max-w-2xl">
+<h2 class="text-4xl font-bold tracking-tight mb-4">Old ways are holding you back.</h2>
+<p class="text-on-surface-variant text-lg">Spreadsheets and complex apps make tracking a chore. XPENSEDIARY makes it an instinct.</p>
+</div>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+<!-- Problem 1 -->
+<div class="bg-surface-container-low p-8 rounded-2xl flex flex-col justify-between h-64">
+<span class="material-symbols-outlined text-error text-4xl">password</span>
+<div>
+<h3 class="font-bold text-xl mb-2 text-on-surface">Forgetfulness</h3>
+<p class="text-on-surface-variant text-sm">Most expenses are forgotten before you get home to open your laptop or complex app.</p>
+</div>
+</div>
+<!-- Solution (Spans 2 columns) -->
+<div class="md:col-span-2 bg-gradient-to-br from-primary to-primary-container p-10 rounded-2xl text-white flex flex-col justify-between">
+<div class="flex justify-between items-start">
+<span class="material-symbols-outlined text-secondary-container text-5xl">chat</span>
+<span class="bg-white/10 px-4 py-1 rounded-full text-xs font-bold uppercase tracking-widest">THE SOLUTION</span>
+</div>
+<div>
+<h3 class="text-3xl font-bold mb-4">Instant WhatsApp Logging</h3>
+<p class="text-on-primary-container text-lg max-w-lg">Track on the fly while paying. No passwords to remember, no apps to load. Just a simple message to a chat you already use every day.</p>
+</div>
+</div>
+<!-- Problem 2 -->
+<div class="bg-surface-container-low p-8 rounded-2xl flex flex-col justify-between h-64">
+<span class="material-symbols-outlined text-error text-4xl">analytics</span>
+<div>
+<h3 class="font-bold text-xl mb-2 text-on-surface">Data Overload</h3>
+<p class="text-on-surface-variant text-sm">Rows of numbers are boring. You need clarity on where your money is actually going.</p>
+</div>
+</div>
+<!-- Solution 2 -->
+<div class="bg-white p-8 rounded-2xl shadow-sm flex flex-col justify-between h-64 border border-outline-variant/10">
+<span class="material-symbols-outlined text-secondary text-4xl">auto_awesome</span>
+<div>
+<h3 class="font-bold text-xl mb-2 text-on-surface">AI Categorization</h3>
+<p class="text-on-surface-variant text-sm">Our AI automatically labels your spend as "Coffee", "Rent", or "Travel" without you lifting a finger.</p>
+</div>
+</div>
+<!-- Solution 3 -->
+<div class="bg-surface-container-low p-8 rounded-2xl flex flex-col justify-between h-64">
+<span class="material-symbols-outlined text-secondary text-4xl">security</span>
+<div>
+<h3 class="font-bold text-xl mb-2 text-on-surface">Bank-Level Security</h3>
+<p class="text-on-surface-variant text-sm">Your data is encrypted and private. We never see your bank details; only what you tell us.</p>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- How It Works Section -->
+<section class="py-24 px-6 bg-surface-container-low" id="how-it-works">
+<div class="max-w-7xl mx-auto">
+<div class="text-center mb-20">
+<h2 class="text-4xl font-bold tracking-tight mb-4">Ready in 3 simple steps</h2>
+<p class="text-on-surface-variant max-w-xl mx-auto">Financial mastery has never been this frictionless.</p>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-3 gap-12 relative">
+<!-- Connector Line -->
+<div class="hidden md:block absolute top-12 left-0 w-full h-[2px] bg-gradient-to-r from-transparent via-outline-variant/30 to-transparent"></div>
+<div class="relative z-10 flex flex-col items-center text-center">
+<div class="w-24 h-24 rounded-2xl bg-white shadow-xl flex items-center justify-center mb-8 border border-outline-variant/10">
+<span class="text-3xl font-extrabold text-primary">01</span>
+</div>
+<h3 class="text-xl font-bold mb-4">Text Your Expense</h3>
+<p class="text-on-surface-variant text-sm leading-relaxed">Send a simple text like <span class="font-bold text-primary">"₹350 Uber"</span> to our dedicated WhatsApp number.</p>
+</div>
+<div class="relative z-10 flex flex-col items-center text-center">
+<div class="w-24 h-24 rounded-2xl bg-white shadow-xl flex items-center justify-center mb-8 border border-outline-variant/10">
+<span class="text-3xl font-extrabold text-secondary">02</span>
+</div>
+<h3 class="text-xl font-bold mb-4">AI Categorizes</h3>
+<p class="text-on-surface-variant text-sm leading-relaxed">Our system instantly parses the text and files it into the right category (Transport).</p>
+</div>
+<div class="relative z-10 flex flex-col items-center text-center">
+<div class="w-24 h-24 rounded-2xl bg-white shadow-xl flex items-center justify-center mb-8 border border-outline-variant/10">
+<span class="text-3xl font-extrabold text-primary">03</span>
+</div>
+<h3 class="text-xl font-bold mb-4">View Analytics</h3>
+<p class="text-on-surface-variant text-sm leading-relaxed">Log in to your dashboard anytime to see beautiful visual breakdowns of your ₹ spends.</p>
+</div>
+</div>
+</div>
+</section>
+<!-- Features Grid -->
+<section class="py-24 px-6 bg-surface" id="features">
+<div class="max-w-7xl mx-auto">
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10">
+<div class="group">
+<div class="w-12 h-12 bg-secondary-container/20 rounded-lg flex items-center justify-center mb-6 group-hover:bg-secondary-container transition-colors">
+<span class="material-symbols-outlined text-secondary">chat</span>
+</div>
+<h4 class="text-xl font-bold mb-3">WhatsApp Integration</h4>
+<p class="text-on-surface-variant text-sm leading-relaxed">No new apps to install. Use the messaging interface you're already familiar with for 24/7 logging.</p>
+</div>
+<div class="group">
+<div class="w-12 h-12 bg-primary-container/10 rounded-lg flex items-center justify-center mb-6 group-hover:bg-primary-container transition-colors">
+<span class="material-symbols-outlined text-primary">dashboard</span>
+</div>
+<h4 class="text-xl font-bold mb-3">Smart Dashboard</h4>
+<p class="text-on-surface-variant text-sm leading-relaxed">A clean, focused web interface designed for insights, not just data entry.</p>
+</div>
+<div class="group">
+<div class="w-12 h-12 bg-secondary-container/20 rounded-lg flex items-center justify-center mb-6 group-hover:bg-secondary-container transition-colors">
+<span class="material-symbols-outlined text-secondary">bar_chart</span>
+</div>
+<h4 class="text-xl font-bold mb-3">Visual Reports</h4>
+<p class="text-on-surface-variant text-sm leading-relaxed">Beautifully rendered pie charts and trend lines help you spot spending patterns instantly.</p>
+</div>
+<div class="group">
+<div class="w-12 h-12 bg-primary-container/10 rounded-lg flex items-center justify-center mb-6 group-hover:bg-primary-container transition-colors">
+<span class="material-symbols-outlined text-primary">encrypted</span>
+</div>
+<h4 class="text-xl font-bold mb-3">Bank-level Security</h4>
+<p class="text-on-surface-variant text-sm leading-relaxed">End-to-end encryption for your messages and SOC-2 compliant cloud storage for your data.</p>
+</div>
+<div class="group">
+<div class="w-12 h-12 bg-secondary-container/20 rounded-lg flex items-center justify-center mb-6 group-hover:bg-secondary-container transition-colors">
+<span class="material-symbols-outlined text-secondary">psychology</span>
+</div>
+<h4 class="text-xl font-bold mb-3">Auto-Categorization</h4>
+<p class="text-on-surface-variant text-sm leading-relaxed">Machine learning algorithms that get smarter with every text, accurately filing even vague entries.</p>
+</div>
+<div class="group">
+<div class="w-12 h-12 bg-primary-container/10 rounded-lg flex items-center justify-center mb-6 group-hover:bg-primary-container transition-colors">
+<span class="material-symbols-outlined text-primary">sync</span>
+</div>
+<h4 class="text-xl font-bold mb-3">Real-time Sync</h4>
+<p class="text-on-surface-variant text-sm leading-relaxed">Your dashboard updates the millisecond you send a WhatsApp message. Instant feedback for total control.</p>
+</div>
+</div>
+</div>
+</section>
+<!-- Indian User Testimonials -->
+<section class="py-24 px-6 bg-surface-container">
+<div class="max-w-7xl mx-auto">
+<h2 class="text-4xl font-bold tracking-tight text-center mb-16">Trusted by Smart Savers in India</h2>
+<div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+<div class="bg-white p-8 rounded-2xl shadow-sm">
+<div class="flex text-secondary mb-4">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">star</span>
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">star</span>
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">star</span>
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">star</span>
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">star</span>
+</div>
+<p class="text-on-surface-variant italic mb-6">"Finally something that works for my UPI spends. I just text the amount right after scanning the QR code at the shop. Best tracker for India!"</p>
+<div class="font-bold">Ananya S.</div>
+<div class="text-sm text-on-surface-variant">Bangalore, Tech Professional</div>
+</div>
+<div class="bg-white p-8 rounded-2xl shadow-sm">
+<div class="flex text-secondary mb-4">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">star</span>
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">star</span>
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">star</span>
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">star</span>
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">star</span>
+</div>
+<p class="text-on-surface-variant italic mb-6">"I track all my Zomato and petrol expenses here. It's so much faster than opening a separate app every time. Highly recommended."</p>
+<div class="font-bold">Rahul M.</div>
+<div class="text-sm text-on-surface-variant">Mumbai, Marketing Lead</div>
+</div>
+<div class="bg-white p-8 rounded-2xl shadow-sm">
+<div class="flex text-secondary mb-4">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">star</span>
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">star</span>
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">star</span>
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">star</span>
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">star</span>
+</div>
+<p class="text-on-surface-variant italic mb-6">"Secure and simple. I love that it doesn't need access to my SMS or bank accounts. I'm in control of what I track."</p>
+<div class="font-bold">Priya K.</div>
+<div class="text-sm text-on-surface-variant">Delhi, Freelancer</div>
+</div>
+</div>
+</div>
+</section>
+<!-- FAQ Section with Schema -->
+<section class="py-24 px-6 bg-surface-container-low">
+<div class="max-w-4xl mx-auto">
+<h2 class="text-4xl font-bold tracking-tight text-center mb-16">Common Questions</h2>
+<div class="space-y-6">
+<div class="bg-white p-8 rounded-xl shadow-sm border border-outline-variant/10">
+<h4 class="font-bold text-lg mb-3">Is it really free for Indians?</h4>
+<p class="text-on-surface-variant">Yes! Our basic plan is free forever for everyone. You can track up to 50 expenses per month without paying a single Rupee (₹).</p>
+</div>
+<div class="bg-white p-8 rounded-xl shadow-sm border border-outline-variant/10">
+<h4 class="font-bold text-lg mb-3">Is it safe for UPI payments?</h4>
+<p class="text-on-surface-variant">Absolutely. We never ask for your UPI PIN, banking credentials, or card details. You manually text us the amount you spent, so your bank account remains 100% secure.</p>
+</div>
+<div class="bg-white p-8 rounded-xl shadow-sm border border-outline-variant/10">
+<h4 class="font-bold text-lg mb-3">Do I need an app?</h4>
+<p class="text-on-surface-variant">No app download is required. XPENSEDIARY works entirely within WhatsApp, which you already use. You can view your reports on our mobile-friendly web dashboard.</p>
+</div>
+</div>
+</div>
+<!-- JSON-LD FAQ Schema -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [{
+    "@type": "Question",
+    "name": "Is it really free for Indians?",
+    "acceptedAnswer": {
+      "@type": "Answer",
+      "text": "Yes! Our basic plan is free forever for everyone. You can track up to 50 expenses per month without paying a single Rupee (₹)."
+    }
+  }, {
+    "@type": "Question",
+    "name": "Is it safe for UPI payments?",
+    "acceptedAnswer": {
+      "@type": "Answer",
+      "text": "Absolutely. We never ask for your UPI PIN, banking credentials, or card details. You manually text us the amount you spent, so your bank account remains 100% secure."
+    }
+  }, {
+    "@type": "Question",
+    "name": "Do I need an app?",
+    "acceptedAnswer": {
+      "@type": "Answer",
+      "text": "No app download is required. XPENSEDIARY works entirely within WhatsApp, which you already use. You can view your reports on our mobile-friendly web dashboard."
+    }
+  }]
+}
+</script>
+</section>
+<!-- Final CTA -->
+<section class="py-24 px-6">
+<div class="max-w-5xl mx-auto bg-gradient-to-br from-primary to-primary-container rounded-[2.5rem] p-12 text-center text-white relative overflow-hidden">
+<div class="absolute inset-0 opacity-10 pointer-events-none" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuDa68wP4FNqlwFlhZToGxoHLyxN7N05rhFccs8CgJbO8i3JoR4H_w5PA_2om_x1lveu-hFHEdGH07IwmJPuRjSqVnndPPlye_HHAChemuFatsr0V99EkGDWmMrx-kcEtdABXRGFe69BVltFeZOhFxcdWOwR_wHiTHZqI-wmefvlNtNkWDLiYmW2epgUxBrtf3SlZC5RIwt5N3tCVqNQ1Dq3HCKs1AoG6FaN9E6pPyt5Q-eBnp6eCEQMY0M6CfvGxkAiyyKm6rmCiF4');"></div>
+<h2 class="text-4xl md:text-5xl font-bold mb-8 relative z-10">Start tracking today. ₹0 setup, just results.</h2>
+<div class="flex flex-col sm:flex-row gap-4 justify-center relative z-10">
+<button class="bg-white text-primary px-10 py-4 rounded-xl font-bold text-lg shadow-xl hover:bg-surface transition-all">Get Started for Free</button>
+<button class="bg-primary-container border border-white/20 text-white px-10 py-4 rounded-xl font-bold text-lg hover:bg-white/10 transition-all">Contact Support</button>
+</div>
+<p class="mt-8 text-on-primary-container font-medium opacity-80 relative z-10">Join 5,000+ smart Indian savers today.</p>
+</div>
+</section>
+<!-- Footer -->
+<footer class="w-full border-t border-slate-200 dark:border-slate-800 bg-slate-50">
+<div class="grid grid-cols-2 md:grid-cols-4 gap-8 px-6 py-12 max-w-7xl mx-auto">
+<div class="col-span-2 md:col-span-1">
+<div class="text-lg font-bold text-blue-900 mb-6">XPENSEDIARY</div>
+<p class="text-slate-500 font-inter text-sm leading-relaxed mb-6">Simplifying personal finance in India through the platforms you already love.</p>
+</div>
+<div>
+<h5 class="font-bold text-blue-900 mb-4 uppercase text-xs tracking-widest">Product</h5>
+<ul class="space-y-3">
+<li><a class="text-slate-500 hover:text-blue-700 transition-opacity font-inter text-sm" href="#">Features</a></li>
+<li><a class="text-slate-500 hover:text-blue-700 transition-opacity font-inter text-sm" href="#">Pricing</a></li>
+<li><a class="text-slate-500 hover:text-blue-700 transition-opacity font-inter text-sm" href="#">Support</a></li>
+</ul>
+</div>
+<div>
+<h5 class="font-bold text-blue-900 mb-4 uppercase text-xs tracking-widest">Resources</h5>
+<ul class="space-y-3">
+<li><a class="text-slate-500 hover:text-blue-700 transition-opacity font-inter text-sm" href="#">Help Center</a></li>
+<li><a class="text-slate-500 hover:text-blue-700 transition-opacity font-inter text-sm" href="#">Contact</a></li>
+<li><a class="text-slate-500 hover:text-blue-700 transition-opacity font-inter text-sm" href="#">Legal</a></li>
+</ul>
+</div>
+<div>
+<h5 class="font-bold text-blue-900 mb-4 uppercase text-xs tracking-widest">Legal</h5>
+<ul class="space-y-3">
+<li><a class="text-slate-500 hover:text-blue-700 transition-opacity font-inter text-sm" href="#">Privacy Policy</a></li>
+<li><a class="text-slate-500 hover:text-blue-700 transition-opacity font-inter text-sm" href="#">Terms of Service</a></li>
+</ul>
+</div>
+</div>
+<div class="max-w-7xl mx-auto px-6 py-8 border-t border-slate-200">
+<p class="text-slate-500 font-inter text-sm">© 2024 XPENSEDIARY India. All rights reserved.</p>
+</div>
+</footer>
+</body></html>

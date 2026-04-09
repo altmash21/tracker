@@ -1,4 +1,4 @@
-# WhatsApp-Integrated Expense Tracking System
+# XPENSEDIARY - WhatsApp-Integrated Expense Tracking System
 ## Complete Documentation & Setup Guide
 
 **Last Updated:** January 12, 2026
