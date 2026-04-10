@@ -1,32 +1,171 @@
 {% extends 'dashboard/base.html' %}
 
-{% block title %}Contact | XPENSEDIARY{% endblock %}
+{% block title %}XPENSEDIARY | Contact Us{% endblock %}
+
+{% block extra_head %}
+<style>
+    .glass-header {
+        background: rgba(255, 255, 255, 0.8);
+        backdrop-filter: blur(20px);
+    }
+</style>
+{% endblock %}
 
 {% block content %}
-<section class="max-w-3xl mx-auto py-10">
-    <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-10">
-        <p class="text-xs font-bold uppercase tracking-widest text-emerald-700">Contact</p>
-        <h1 class="mt-3 text-4xl font-black tracking-tight">Need help with XPENSEDIARY?</h1>
-        <p class="mt-4 text-slate-600 leading-7">Reach out using the details below and we will respond as quickly as possible.</p>
+<main class="pt-32 pb-24 px-6">
+    <div class="max-w-7xl mx-auto">
 
-        <div class="mt-8 space-y-4 text-sm">
-            <div class="rounded-xl border border-slate-200 p-4">
-                <p class="font-semibold">Email support</p>
-                <p class="text-slate-600">support@xpensediary.in</p>
-            </div>
-            <div class="rounded-xl border border-slate-200 p-4">
-                <p class="font-semibold">Business inquiries</p>
-                <p class="text-slate-600">hello@xpensediary.in</p>
-            </div>
-            <div class="rounded-xl border border-slate-200 p-4">
-                <p class="font-semibold">Business name</p>
-                <p class="text-slate-600">TechSpark (XPENSEDIARY product line)</p>
-            </div>
-            <div class="rounded-xl border border-slate-200 p-4">
-                <p class="font-semibold">Location</p>
-                <p class="text-slate-600">Bangalore, Karnataka, India</p>
-            </div>
+        <!-- Page Header -->
+        <div class="mb-20 text-center md:text-left">
+            <h1 class="text-5xl md:text-7xl font-bold tracking-tight text-primary mb-6">Connect with us.</h1>
+            <p class="text-xl text-on-surface-variant max-w-2xl">Refining your financial narrative starts with a single conversation. Reach out to our dedicated support teams.</p>
         </div>
+
+        <!-- Main Asymmetric Grid -->
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-12">
+
+            <!-- Left Column -->
+            <div class="lg:col-span-4 space-y-12">
+
+                <!-- Direct Channels -->
+                <section>
+                    <h3 class="text-xs font-bold uppercase tracking-[0.1em] text-on-surface-variant mb-6">Direct Channels</h3>
+                    <div class="space-y-6">
+                        <a class="group flex items-center p-6 bg-surface-container-lowest rounded-xl hover:bg-surface-container transition-colors duration-300"
+                           href="mailto:concierge@xpensediary.com">
+                            <div class="w-12 h-12 flex items-center justify-center bg-primary-fixed text-primary rounded-full mr-4 group-hover:scale-110 transition-transform">
+                                <span class="material-symbols-outlined">mail</span>
+                            </div>
+                            <div>
+                                <p class="text-sm font-bold text-primary">Email Support</p>
+                                <p class="text-on-surface-variant">concierge@xpensediary.com</p>
+                            </div>
+                        </a>
+                        <a class="group flex items-center p-6 bg-surface-container-lowest rounded-xl hover:bg-surface-container transition-colors duration-300"
+                           href="#">
+                            <div class="w-12 h-12 flex items-center justify-center bg-secondary-container text-on-secondary-container rounded-full mr-4 group-hover:scale-110 transition-transform">
+                                <span class="material-symbols-outlined">chat</span>
+                            </div>
+                            <div>
+                                <p class="text-sm font-bold text-secondary">WhatsApp Concierge</p>
+                                <p class="text-on-surface-variant">Instant response within 5m</p>
+                            </div>
+                        </a>
+                        <a class="group flex items-center p-6 bg-surface-container-lowest rounded-xl hover:bg-surface-container transition-colors duration-300"
+                           href="#">
+                            <div class="w-12 h-12 flex items-center justify-center bg-surface-container-high text-primary rounded-full mr-4 group-hover:scale-110 transition-transform">
+                                <span class="material-symbols-outlined">menu_book</span>
+                            </div>
+                            <div>
+                                <p class="text-sm font-bold text-primary">Self-Service Documentation</p>
+                                <p class="text-on-surface-variant">Guides and API References</p>
+                            </div>
+                        </a>
+                    </div>
+                </section>
+
+                <!-- Office Section -->
+                <section class="bg-surface-container-low p-8 rounded-xl">
+                    <h3 class="text-xs font-bold uppercase tracking-[0.1em] text-on-surface-variant mb-6">Global Headquarters</h3>
+                    <div class="space-y-4">
+                        <div class="aspect-video w-full rounded-lg overflow-hidden grayscale opacity-80 hover:grayscale-0 transition-all duration-700">
+                            <img class="w-full h-full object-cover"
+                                 alt="Modern minimalist office interior with clean lines and large windows"
+                                 src="https://lh3.googleusercontent.com/aida-public/AB6AXuBIRZUCfyJNa-mjfY7x78mOceAy9s9Z8lDGXmI0jIYAvk8z5ZuA7h9oaEW6A5ygQv2BwjH_rE0rBREH9bJWkAGeXGbqJYKf8I9TC1SA73n8Xk5X61DKfHAUTspsgOy0cvSTBF4gYtQfUuClS4-IHwhhf5NHhCEIAC1SeltF_bhRZVKIICKhW_HfnfYIgjyObfqVlBslcfRBurwFy_yZoC8XIT3-a2Et_dvb5w9P5Ye2AaN4-66S3a03r1n836gETS2h74QDaziIRu4"/>
+                        </div>
+                        <div>
+                            <p class="font-bold text-primary">XPENSEDIARY LTD</p>
+                            <p class="text-on-surface-variant">1200 Avenue of the Americas</p>
+                            <p class="text-on-surface-variant">New York, NY 10036</p>
+                        </div>
+                    </div>
+                </section>
+
+            </div>
+
+            <!-- Right Column: Contact Form -->
+            <div class="lg:col-span-8 bg-surface-container-lowest p-10 md:p-16 rounded-xl shadow-[0_32px_64px_rgba(0,0,0,0.04)]">
+                <h3 class="text-3xl font-bold text-primary mb-12">Submit a Request</h3>
+                <form method="post" action="{% url 'dashboard:contact' %}" class="space-y-8">
+                    {% csrf_token %}
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                        <div class="space-y-2">
+                            <label class="text-xs font-bold uppercase tracking-wider text-on-surface-variant">Full Name</label>
+                            <input
+                                name="name"
+                                type="text"
+                                placeholder="Johnathan Doe"
+                                required
+                                class="w-full border-0 border-b-2 border-outline-variant bg-transparent px-0 py-2 focus:ring-0 focus:border-primary transition-all duration-300"/>
+                        </div>
+                        <div class="space-y-2">
+                            <label class="text-xs font-bold uppercase tracking-wider text-on-surface-variant">Email Address</label>
+                            <input
+                                name="email"
+                                type="email"
+                                placeholder="john@example.com"
+                                required
+                                class="w-full border-0 border-b-2 border-outline-variant bg-transparent px-0 py-2 focus:ring-0 focus:border-primary transition-all duration-300"/>
+                        </div>
+                    </div>
+                    <div class="space-y-2">
+                        <label class="text-xs font-bold uppercase tracking-wider text-on-surface-variant">Inquiry Type</label>
+                        <select
+                            name="inquiry_type"
+                            class="w-full border-0 border-b-2 border-outline-variant bg-transparent px-0 py-2 focus:ring-0 focus:border-primary transition-all duration-300 appearance-none">
+                            <option value="general">General Inquiry</option>
+                            <option value="technical">Technical Support</option>
+                            <option value="billing">Billing &amp; Subscriptions</option>
+                            <option value="enterprise">Enterprise Solutions</option>
+                        </select>
+                    </div>
+                    <div class="space-y-2">
+                        <label class="text-xs font-bold uppercase tracking-wider text-on-surface-variant">Message</label>
+                        <textarea
+                            name="message"
+                            rows="5"
+                            placeholder="How can we assist your financial journey?"
+                            required
+                            class="w-full border-0 border-b-2 border-outline-variant bg-transparent px-0 py-2 focus:ring-0 focus:border-primary transition-all duration-300 resize-none"></textarea>
+                    </div>
+                    <div class="pt-8">
+                        <button
+                            type="submit"
+                            class="w-full md:w-auto px-12 py-4 bg-primary text-on-primary rounded-lg font-bold hover:bg-primary-container transition-all duration-300 shadow-xl">
+                            Send Message
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+        </div>
+
+        <!-- FAQ Section -->
+        <section class="mt-32">
+            <div class="text-center mb-16">
+                <h2 class="text-3xl font-bold text-primary mb-4">Quick Help</h2>
+                <p class="text-on-surface-variant">Answers to common inquiries from our community.</p>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-x-16 gap-y-12">
+                <div class="space-y-4">
+                    <h4 class="font-bold text-primary">How secure is my data?</h4>
+                    <p class="text-on-surface-variant leading-relaxed">We employ bank-grade 256-bit AES encryption and multi-factor authentication to ensure your financial narrative remains strictly private.</p>
+                </div>
+                <div class="space-y-4">
+                    <h4 class="font-bold text-primary">Can I export my records?</h4>
+                    <p class="text-on-surface-variant leading-relaxed">Absolutely. High-fidelity CSV, PDF, and specialized tax-ready formats are available for instant export within the Analytics dashboard.</p>
+                </div>
+                <div class="space-y-4">
+                    <h4 class="font-bold text-primary">What is the response time for priority support?</h4>
+                    <p class="text-on-surface-variant leading-relaxed">Enterprise and Premium members receive a guaranteed response from a dedicated human concierge within 60 minutes during market hours.</p>
+                </div>
+                <div class="space-y-4">
+                    <h4 class="font-bold text-primary">Do you offer API access?</h4>
+                    <p class="text-on-surface-variant leading-relaxed">Yes, we provide robust REST APIs for custom integrations. Please refer to our Documentation for full endpoint specifications.</p>
+                </div>
+            </div>
+        </section>
+
     </div>
-</section>
+</main>
 {% endblock %}

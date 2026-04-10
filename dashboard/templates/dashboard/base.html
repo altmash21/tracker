@@ -1,472 +1,196 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="scroll-smooth">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
     <title>{% block title %}XPENSEDIARY{% endblock %}</title>
     <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-    {% block extra_head %}{% endblock %}
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+    <script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-primary": "#ffffff",
+                        "tertiary": "#00311f",
+                        "primary-fixed-dim": "#b6c4ff",
+                        "surface-tint": "#4059aa",
+                        "outline-variant": "#c5c5d3",
+                        "on-surface": "#191c1e",
+                        "on-primary-fixed-variant": "#264191",
+                        "on-primary-container": "#90a8ff",
+                        "on-background": "#191c1e",
+                        "secondary-fixed-dim": "#3de273",
+                        "inverse-surface": "#2e3132",
+                        "surface-container": "#edeef0",
+                        "surface-container-high": "#e7e8ea",
+                        "on-secondary": "#ffffff",
+                        "secondary-fixed": "#66ff8e",
+                        "on-error": "#ffffff",
+                        "outline": "#757682",
+                        "background": "#f8f9fb",
+                        "surface-bright": "#f8f9fb",
+                        "tertiary-fixed-dim": "#4edea3",
+                        "error-container": "#ffdad6",
+                        "on-tertiary-fixed": "#002113",
+                        "on-surface-variant": "#444651",
+                        "error": "#ba1a1a",
+                        "surface-container-highest": "#e1e2e4",
+                        "surface": "#f8f9fb",
+                        "on-tertiary-container": "#27c38a",
+                        "inverse-primary": "#b6c4ff",
+                        "primary-fixed": "#dce1ff",
+                        "on-secondary-container": "#007232",
+                        "primary": "#00236f",
+                        "on-primary-fixed": "#00164e",
+                        "surface-dim": "#d9dadc",
+                        "primary-container": "#1e3a8a",
+                        "on-tertiary-fixed-variant": "#005236",
+                        "surface-container-lowest": "#ffffff",
+                        "surface-container-low": "#f3f4f6",
+                        "tertiary-fixed": "#6ffbbe",
+                        "tertiary-container": "#004a31",
+                        "secondary": "#006d2f",
+                        "on-secondary-fixed-variant": "#005322",
+                        "on-secondary-fixed": "#002109",
+                        "secondary-container": "#5dfd8a",
+                        "on-tertiary": "#ffffff",
+                        "on-error-container": "#93000a",
+                        "inverse-on-surface": "#f0f1f3",
+                        "surface-variant": "#e1e2e4"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "fontFamily": {
+                        "headline": ["Inter"],
+                        "body": ["Inter"],
+                        "label": ["Inter"]
+                    }
+                },
+            },
+        }
+    </script>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        
-        body {
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-            background: #f8f9fa;
-            min-height: 100vh;
-            padding: 0;
-            color: #1a1a1a;
-            display: flex;
-            flex-direction: column;
-        }
-        
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-        }
-        
-        .navbar {
-            background: white;
-            padding: 12px 0;
-            margin-bottom: 0;
-            border-bottom: 1px solid #e5e7eb;
-            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
-            position: sticky;
-            top: 0;
-            z-index: 50;
-        }
-        
-        .navbar-inner {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 0 24px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        
-        .navbar-brand {
-            font-size: 18px;
-            font-weight: 600;
-            color: #1a1a1a;
-            text-decoration: none;
-            letter-spacing: -0.02em;
-        }
-
-        .navbar-meta {
-            font-size: 11px;
-            color: #6b7280;
-            margin-top: 2px;
-            letter-spacing: 0.02em;
-        }
-        
-        .navbar-menu {
-            display: flex;
-            gap: 20px;
-            align-items: center;
-        }
-        
-        .navbar-menu a, .navbar-menu button {
-            color: #6b7280;
-            text-decoration: none;
-            padding: 6px 12px;
-            border-radius: 6px;
-            transition: all 0.2s;
-            background: none;
-            border: none;
-            cursor: pointer;
-            font-size: 13px;
-            font-weight: 500;
-        }
-        
-        .navbar-menu a:hover, .navbar-menu button:hover {
-            background: #f3f4f6;
-            color: #1a1a1a;
-        }
-        
-        .btn {
-            padding: 8px 16px;
-            border: none;
-            border-radius: 6px;
-            cursor: pointer;
-            font-size: 13px;
-            font-weight: 500;
-            transition: all 0.2s;
-            text-decoration: none;
-            display: inline-block;
-        }
-        
-        .btn-primary {
-            background: #1a1a1a;
-            color: white;
-        }
-        
-        .btn-primary:hover {
-            background: #000000;
-        }
-        
-        .btn-success {
-            background: #10b981;
-            color: white;
-        }
-        
-        .btn-success:hover {
-            background: #059669;
-        }
-        
-        .btn-danger {
-            background: #ef4444;
-            color: white;
-        }
-        
-        .btn-danger:hover {
-            background: #dc2626;
-        }
-        
-        .card {
-            background: white;
-            border-radius: 8px;
-            padding: 24px;
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-            margin-bottom: 16px;
-            border: 1px solid #e5e7eb;
-        }
-        
-        .messages {
-            margin-bottom: 20px;
-        }
-        
-        .alert {
-            padding: 15px;
-            border-radius: 5px;
-            margin-bottom: 10px;
-        }
-        
-        .alert-success {
-            background: #d4edda;
-            color: #155724;
-            border: 1px solid #c3e6cb;
-        }
-        
-        .alert-error {
-            background: #f8d7da;
-            color: #721c24;
-            border: 1px solid #f5c6cb;
-        }
-        
-        .form-group {
-            margin-bottom: 20px;
-        }
-        
-        .form-group label {
-            display: block;
-            margin-bottom: 5px;
-            font-weight: 500;
-        }
-        
-        .form-group input, .form-group select, .form-group textarea {
-            width: 100%;
-            padding: 8px 12px;
-            border: 1px solid #e5e7eb;
-            border-radius: 6px;
-            font-size: 13px;
-            transition: all 0.2s;
-        }
-        
-        .form-group input:focus, .form-group select:focus {
-            outline: none;
-            border-color: #1a1a1a;
-            box-shadow: 0 0 0 3px rgba(26, 26, 26, 0.1);
-        }
-        
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 20px;
-        }
-        
-        table th, table td {
-            padding: 10px 12px;
-            text-align: left;
-            border-bottom: 1px solid #e5e7eb;
-            font-size: 13px;
-        }
-        
-        table th {
-            background: #f9fafb;
-            font-weight: 600;
-            color: #6b7280;
-            text-transform: uppercase;
-            font-size: 11px;
-            letter-spacing: 0.05em;
-        }
-        
-        .stats-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 20px;
-            margin-bottom: 30px;
-        }
-        
-        .stat-card {
-            background: white;
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-            border: 1px solid #e5e7eb;
-        }
-        
-        .stat-card h3 {
-            font-size: 11px;
-            color: #6b7280;
-            margin-bottom: 8px;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-            font-weight: 600;
-        }
-        
-        .stat-card .amount {
-            font-size: 28px;
-            font-weight: 600;
-            color: #1a1a1a;
-            letter-spacing: -0.02em;
-        }
-        
-        .text-center {
-            text-align: center;
-        }
-        
-        .mt-20 {
-            margin-top: 20px;
-        }
-
-        .site-content {
-            width: 100%;
-            flex: 1;
-        }
-
-        .footer-links {
-            margin-top: 8px;
-            display: flex;
-            justify-content: center;
-            gap: 14px;
-            flex-wrap: wrap;
-            font-size: 12px;
-        }
-
-        .footer-links a {
-            color: #6b7280;
-            text-decoration: none;
-        }
-
-        .footer-links a:hover {
-            color: #111827;
-            text-decoration: underline;
-        }
-
-        .site-footer {
-            background: #0f172a;
-            color: #cbd5e1;
-            margin-top: auto;
-            border-top: 1px solid #1e293b;
-        }
-
-        .site-footer-inner {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 44px 24px 28px;
-            display: grid;
-            grid-template-columns: 1.5fr 1fr 1fr 1fr;
-            gap: 28px;
-        }
-
-        .footer-title {
-            color: #f8fafc;
-            font-size: 13px;
-            font-weight: 700;
-            letter-spacing: 0.08em;
-            text-transform: uppercase;
-            margin-bottom: 12px;
-        }
-
-        .footer-brand {
-            color: #f8fafc;
-            font-size: 22px;
-            font-weight: 700;
-            letter-spacing: -0.02em;
-            text-decoration: none;
-            display: inline-block;
-            margin-bottom: 10px;
-        }
-
-        .footer-copy {
-            font-size: 14px;
-            line-height: 1.7;
-            color: #94a3b8;
-            max-width: 360px;
-        }
-
-        .footer-list {
-            list-style: none;
-            margin: 0;
-            padding: 0;
-            display: grid;
-            gap: 10px;
-        }
-
-        .footer-list a {
-            color: #cbd5e1;
-            text-decoration: none;
-            font-size: 14px;
-        }
-
-        .footer-list a:hover {
-            color: #ffffff;
-        }
-
-        .footer-bottom {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 16px 24px 24px;
-            border-top: 1px solid #1e293b;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            gap: 16px;
-            flex-wrap: wrap;
-            font-size: 12px;
-            color: #94a3b8;
-        }
-
-        .footer-badge {
-            padding: 6px 10px;
-            border: 1px solid #334155;
-            border-radius: 999px;
-            font-size: 11px;
-            color: #e2e8f0;
-            background: #111827;
-        }
-
-        @media (max-width: 860px) {
-            .navbar-inner {
-                align-items: flex-start;
-                flex-direction: column;
-                gap: 10px;
-            }
-
-            .navbar-menu {
-                width: 100%;
-                flex-wrap: wrap;
-                gap: 8px;
-            }
-
-            .site-footer-inner {
-                grid-template-columns: 1fr 1fr;
-            }
-        }
-
-        @media (max-width: 560px) {
-            .site-footer-inner {
-                grid-template-columns: 1fr;
-            }
+        body { font-family: 'Inter', sans-serif; }
+        .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+        .mesh-gradient {
+            background-color: #f8f9fb;
+            background-image: radial-gradient(at 0% 0%, rgba(30, 58, 138, 0.05) 0px, transparent 50%),
+                              radial-gradient(at 100% 0%, rgba(93, 253, 138, 0.05) 0px, transparent 50%);
         }
     </style>
-    {% block extra_css %}{% endblock %}
+    {% block extra_head %}{% endblock %}
 </head>
-<body>
-    <nav class="navbar">
-        <div class="navbar-inner">
-            <div>
-                <a href="{% if user.is_authenticated %}{% url 'dashboard:dashboard' %}{% else %}{% url 'dashboard:home' %}{% endif %}" class="navbar-brand">XPENSEDIARY</a>
-                <div class="navbar-meta">A registered TechSpark product</div>
-            </div>
-            <div class="navbar-menu">
-                {% if user.is_authenticated %}
-                <a href="{% url 'dashboard:dashboard' %}">Dashboard</a>
-                <a href="{% url 'dashboard:expenses' %}">Expenses</a>
-                <a href="{% url 'dashboard:categories' %}">Categories</a>
-                {% if not user.whatsapp_verified %}
-                <a href="{% url 'dashboard:link_whatsapp' %}" style="color: #ef4444;">Link WhatsApp</a>
-                {% endif %}
-                <a href="{% url 'dashboard:about' %}">About</a>
-                <a href="{% url 'dashboard:contact' %}">Contact</a>
-                <span style="color: #6b7280; padding: 6px 12px; font-size: 13px;">{{ user.username }}</span>
-                <form method="post" action="{% url 'dashboard:logout' %}" style="display: inline;">
-                    {% csrf_token %}
-                    <button type="submit">Logout</button>
-                </form>
-                {% else %}
-                <a href="{% url 'dashboard:home' %}">Home</a>
-                <a href="{% url 'dashboard:about' %}">About</a>
-                <a href="{% url 'dashboard:contact' %}">Contact</a>
-                <a href="{% url 'dashboard:privacy_policy' %}">Privacy</a>
-                <a href="{% url 'dashboard:terms_of_service' %}">Terms</a>
-                <a href="{% url 'dashboard:login' %}" class="btn btn-primary">Login</a>
-                <a href="{% url 'dashboard:register' %}" class="btn" style="border: 1px solid #d1d5db;">Get Started</a>
-                {% endif %}
-            </div>
-        </div>
-    </nav>
+<body class="bg-surface text-on-surface selection:bg-primary-container selection:text-white">
 
-    <main class="site-content">
-    <div class="container" style="max-width: 1200px; margin: 0 auto; padding: 24px;">
-        {% if messages %}
-        <div class="messages">
-            {% for message in messages %}
-            <div class="alert alert-{{ message.tags }}">
-                {{ message }}
-            </div>
-            {% endfor %}
+<!-- Top Navigation -->
+<nav class="fixed top-0 w-full z-50 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl shadow-[0_8px_32px_rgba(0,0,0,0.04)]">
+    <div class="flex justify-between items-center w-full px-8 py-4 max-w-7xl mx-auto">
+        <div>
+            <a href="{% if user.is_authenticated %}{% url 'dashboard:dashboard' %}{% else %}{% url 'dashboard:home' %}{% endif %}"
+               class="text-xl font-black tracking-tighter text-blue-950 dark:text-white font-['Inter']">
+                XPENSEDIARY
+            </a>
+            <div class="text-xs text-slate-400 mt-0.5">A registered product of TechSpark</div>
         </div>
-        {% endif %}
-        
-        {% block content %}{% endblock %}
+
+        <div class="hidden md:flex items-center gap-8 font-['Inter'] tracking-tight font-semibold">
+            {% if user.is_authenticated %}
+            <a class="text-blue-900 dark:text-blue-400 border-b-2 border-blue-900 dark:border-blue-400 pb-1" href="{% url 'dashboard:dashboard' %}">Dashboard</a>
+            <a class="text-slate-500 dark:text-slate-400 hover:text-blue-900 dark:hover:text-blue-200 transition-colors" href="{% url 'dashboard:dashboard' %}#analytics">Analytics</a>
+            <a class="text-slate-500 dark:text-slate-400 hover:text-blue-900 dark:hover:text-blue-200 transition-colors" href="{% url 'dashboard:expenses' %}">Payments</a>
+            <a class="text-slate-500 dark:text-slate-400 hover:text-blue-900 dark:hover:text-blue-200 transition-colors" href="{% url 'dashboard:categories' %}">Settings</a>
+            {% if not user.whatsapp_verified %}
+            <a class="text-red-500 font-bold" href="{% url 'dashboard:link_whatsapp' %}">Link WhatsApp</a>
+            {% endif %}
+            <a class="text-slate-500 dark:text-slate-400 hover:text-blue-900 transition-colors" href="{% url 'dashboard:about' %}">About</a>
+            <a class="text-slate-500 dark:text-slate-400 hover:text-blue-900 transition-colors" href="{% url 'dashboard:contact' %}">Contact</a>
+            {% else %}
+            <a class="text-slate-500 dark:text-slate-400 hover:text-blue-900 dark:hover:text-blue-200 transition-colors" href="{% url 'dashboard:home' %}">Home</a>
+            <a class="text-slate-500 dark:text-slate-400 hover:text-blue-900 dark:hover:text-blue-200 transition-colors" href="{% url 'dashboard:about' %}">About</a>
+            <a class="text-slate-500 dark:text-slate-400 hover:text-blue-900 dark:hover:text-blue-200 transition-colors" href="{% url 'dashboard:contact' %}">Contact</a>
+            <a class="text-slate-500 dark:text-slate-400 hover:text-blue-900 dark:hover:text-blue-200 transition-colors" href="{% url 'dashboard:privacy_policy' %}">Privacy</a>
+            <a class="text-slate-500 dark:text-slate-400 hover:text-blue-900 dark:hover:text-blue-200 transition-colors" href="{% url 'dashboard:terms_of_service' %}">Terms</a>
+            {% endif %}
+        </div>
+
+        <div class="flex items-center gap-4">
+            {% if user.is_authenticated %}
+            <span class="text-sm text-slate-500">{{ user.username }}</span>
+            <form method="post" action="{% url 'dashboard:logout' %}" style="display:inline;">
+                {% csrf_token %}
+                <button type="submit" class="px-6 py-2.5 border border-slate-300 rounded-lg font-semibold text-sm hover:bg-slate-100 transition-all">Logout</button>
+            </form>
+            {% else %}
+            <a href="{% url 'dashboard:login' %}" class="px-6 py-2.5 border border-slate-300 rounded-lg font-semibold text-sm hover:bg-slate-100 transition-all">Login</a>
+            <a href="{% url 'dashboard:register' %}" class="px-6 py-2.5 bg-primary text-white rounded-lg font-semibold transition-all duration-300 ease-in-out hover:scale-[1.02] hover:bg-primary-container">
+                Get Started
+            </a>
+            {% endif %}
+        </div>
     </div>
-            </main>
-    
-    <footer class="site-footer">
-        <div class="site-footer-inner">
-            <div>
-                <a href="{% url 'dashboard:home' %}" class="footer-brand">XPENSEDIARY</a>
-                <p class="footer-copy">Simple WhatsApp-first expense tracking for everyday users and growing teams.</p>
-            </div>
+</nav>
 
-            <div>
-                <p class="footer-title">Company</p>
-                <ul class="footer-list">
-                    <li><a href="{% url 'dashboard:about' %}">About</a></li>
-                    <li><a href="{% url 'dashboard:contact' %}">Contact</a></li>
-                </ul>
-            </div>
+<!-- Flash Messages -->
+{% if messages %}
+<div class="pt-20 max-w-7xl mx-auto px-8">
+    {% for message in messages %}
+    <div class="mt-4 px-4 py-3 rounded-lg text-sm font-medium
+        {% if message.tags == 'success' %}bg-green-100 text-green-800 border border-green-200
+        {% elif message.tags == 'error' %}bg-red-100 text-red-800 border border-red-200
+        {% else %}bg-blue-100 text-blue-800 border border-blue-200{% endif %}">
+        {{ message }}
+    </div>
+    {% endfor %}
+</div>
+{% endif %}
 
-            <div>
-                <p class="footer-title">Product</p>
-                <ul class="footer-list">
-                    <li><a href="{% url 'dashboard:home' %}#features">Features</a></li>
-                    <li><a href="{% url 'dashboard:home' %}#how-it-works">How It Works</a></li>
-                    <li><a href="{% url 'dashboard:register' %}">Get Started</a></li>
-                </ul>
-            </div>
+<!-- Main Content -->
+{% block content %}{% endblock %}
 
-            <div>
-                <p class="footer-title">Legal</p>
-                <ul class="footer-list">
-                    <li><a href="{% url 'dashboard:privacy_policy' %}">Privacy Policy</a></li>
-                    <li><a href="{% url 'dashboard:terms_of_service' %}">Terms of Service</a></li>
-                </ul>
-            </div>
+<!-- Footer -->
+<footer class="w-full py-12 bg-slate-50 dark:bg-slate-950 border-t border-slate-200/15 dark:border-slate-800/15">
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-8 max-w-7xl mx-auto px-8">
+        <div class="col-span-2 md:col-span-1">
+            <a href="{% url 'dashboard:home' %}" class="text-lg font-bold text-slate-900 dark:text-slate-100 mb-2 inline-block">XPENSEDIARY</a>
+            <p class="text-slate-500 text-xs mb-1">A registered product of TechSpark.</p>
+            <p class="text-slate-600 dark:text-slate-400 font-['Inter'] text-sm tracking-normal">Making personal finance as easy as sending a WhatsApp message.</p>
         </div>
-
-        <div class="footer-bottom">
-            <p>Copyright 2026 TechSpark. All rights reserved. XPENSEDIARY is a registered product of TechSpark.</p>
-            <span class="footer-badge">TechSpark Verified Business Identity</span>
+        <div>
+            <h5 class="font-medium text-blue-900 dark:text-blue-400 mb-6">Product</h5>
+            <ul class="space-y-4">
+                <li><a class="text-slate-600 dark:text-slate-400 hover:text-blue-700 dark:hover:text-blue-300 transition-colors" href="{% url 'dashboard:home' %}#features">Features</a></li>
+                <li><a class="text-slate-600 dark:text-slate-400 hover:text-blue-700 dark:hover:text-blue-300 transition-colors" href="{% url 'dashboard:home' %}#how-it-works">How It Works</a></li>
+                <li><a class="text-slate-600 dark:text-slate-400 hover:text-blue-700 dark:hover:text-blue-300 transition-colors" href="{% url 'dashboard:register' %}">Get Started</a></li>
+            </ul>
         </div>
-    </footer>
-    
-    {% block extra_js %}{% endblock %}
+        <div>
+            <h5 class="font-medium text-blue-900 dark:text-blue-400 mb-6">Company</h5>
+            <ul class="space-y-4">
+                <li><a class="text-slate-600 dark:text-slate-400 hover:text-blue-700 dark:hover:text-blue-300 transition-colors" href="{% url 'dashboard:about' %}">About</a></li>
+                <li><a class="text-slate-600 dark:text-slate-400 hover:text-blue-700 dark:hover:text-blue-300 transition-colors" href="{% url 'dashboard:contact' %}">Contact</a></li>
+            </ul>
+        </div>
+        <div>
+            <h5 class="font-medium text-blue-900 dark:text-blue-400 mb-6">Legal</h5>
+            <ul class="space-y-4">
+                <li><a class="text-slate-600 dark:text-slate-400 hover:text-blue-700 dark:hover:text-blue-300 transition-colors" href="{% url 'dashboard:privacy_policy' %}">Privacy Policy</a></li>
+                <li><a class="text-slate-600 dark:text-slate-400 hover:text-blue-700 dark:hover:text-blue-300 transition-colors" href="{% url 'dashboard:terms_of_service' %}">Terms of Service</a></li>
+            </ul>
+        </div>
+    </div>
+    <div class="max-w-7xl mx-auto px-8 mt-12 pt-8 border-t border-slate-200/10 flex flex-col md:flex-row justify-between items-center gap-4 text-center">
+        <p class="text-slate-500 text-xs">© 2026 TechSpark. All rights reserved. XPENSEDIARY is a registered product of TechSpark.</p>
+        <span class="px-3 py-1 border border-slate-300 rounded-full text-xs text-slate-500 bg-white">TechSpark Verified Business Identity</span>
+    </div>
+</footer>
+
+{% block extra_js %}{% endblock %}
 </body>
 </html>

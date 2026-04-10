@@ -1,6 +1,6 @@
 {% extends 'dashboard/base.html' %}
 
-{% block title %}Track Expenses via WhatsApp - Free Expense Tracker India | XPENSEDIARY{% endblock %}
+{% block title %}XPENSEDIARY | Premium WhatsApp Expense Tracking{% endblock %}
 
 {% block extra_head %}
 <script type="application/ld+json">
@@ -14,102 +14,218 @@
     "@type": "Offer",
     "price": "0",
     "priceCurrency": "INR"
+  },
+  "aggregateRating": {
+    "@type": "AggregateRating",
+    "ratingValue": "4.9",
+    "reviewCount": "1000"
   }
 }
 </script>
 {% endblock %}
 
 {% block content %}
-<section class="pt-10 pb-14 px-2 overflow-hidden">
-    <div class="max-w-7xl mx-auto flex flex-col md:flex-row items-center gap-12 lg:gap-20">
-        <div class="flex-1 text-center md:text-left">
-            <span class="inline-block px-4 py-1 rounded-full bg-emerald-100 text-emerald-800 text-xs font-bold tracking-widest uppercase mb-6">No App Download Required</span>
-            <h1 class="text-4xl lg:text-6xl font-black tracking-tight text-slate-900 mb-8 leading-[1.1]">
-                Track Expenses via WhatsApp
-                <span class="block text-blue-900">Free Expense Tracker for India</span>
+<main class="mesh-gradient pt-32 overflow-hidden">
+
+    <!-- Hero Section -->
+    <section class="max-w-7xl mx-auto px-8 grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
+        <div class="space-y-8">
+            <div class="inline-flex items-center px-3 py-1 rounded-full bg-secondary-container text-on-secondary-container text-xs font-bold tracking-widest uppercase">
+                Revolutionizing Indian Fintech
+            </div>
+            <h1 class="text-6xl md:text-7xl font-extrabold tracking-tighter leading-[1.1] text-primary">
+                Manage Wealth <br/>on WhatsApp.
             </h1>
-            <p class="text-lg text-slate-600 mb-10 max-w-xl leading-relaxed">
-                Track your daily spends in seconds. Send a message like <span class="font-bold text-blue-900">"Rs120 food lunch"</span>
-                and keep your dashboard updated instantly.
+            <p class="text-xl text-on-surface-variant max-w-lg leading-relaxed">
+                The ultimate AI-powered expense diary for the modern Indian saver. Track UPI, Zomato orders, and rent payments with a simple text.
             </p>
-            <div class="flex flex-col sm:flex-row items-center gap-4 justify-center md:justify-start">
-                <a class="w-full sm:w-auto bg-gradient-to-br from-blue-900 to-blue-700 text-white px-8 py-4 rounded-lg font-bold text-lg hover:opacity-90 transition-all shadow-xl shadow-blue-900/10 text-center" href="{% url 'dashboard:register' %}">Get Started for Free</a>
-                <a class="w-full sm:w-auto flex items-center justify-center gap-2 text-blue-900 font-bold px-8 py-4 rounded-lg hover:bg-slate-100 transition-all" href="{% url 'dashboard:login' %}">
-                    Login with OTP
+            <div class="flex flex-wrap gap-4">
+                <a href="{% url 'dashboard:register' %}" class="px-8 py-4 bg-primary text-white rounded-xl font-bold flex items-center gap-2 shadow-xl hover:shadow-primary/20 transition-all">
+                    <span class="material-symbols-outlined">chat</span>
+                    Start Tracking on WhatsApp
                 </a>
+                <div class="flex items-center gap-4 px-4 py-2">
+                    <div class="flex -space-x-3">
+                        <div class="w-10 h-10 rounded-full border-2 border-white bg-slate-200 overflow-hidden"></div>
+                        <div class="w-10 h-10 rounded-full border-2 border-white bg-slate-300 overflow-hidden"></div>
+                        <div class="w-10 h-10 rounded-full border-2 border-white bg-slate-300 flex items-center justify-center text-[10px] font-bold">5k+</div>
+                    </div>
+                    <span class="text-sm font-medium text-on-surface-variant">Trusted by 5,000+ Smart Savers</span>
+                </div>
             </div>
         </div>
 
-        <div class="flex-1 relative">
-            <div class="relative z-10 rounded-3xl overflow-hidden shadow-2xl border-[8px] border-slate-900">
-                <img alt="WhatsApp interface for expense tracking" class="w-full h-auto" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCF072aq8CxLWboXcgYIO4HiNgnzs0FavPYbW1X4xFxrwV0oapmPxT_0BOPhlzZRQuoIgkeJ7Ffsz6t31nTv9O7Y3APcu4YvsWMe10k11IXTq7Tctj2tIetZjTvjJfI0aRah2b01_l0IAVMnno381rS_Lf94UBSvVCx-KggLmDGRgsQwWFz01yAGp1vwBRCDVMCFqRGmG0CzPkue7GydicKiPwmOSTF3rtKUEVNrXlzTgyw1Qgr7aNE6MmXlV-UH52IajV96HnrKwY" />
+        <!-- WhatsApp Mockup -->
+        <div class="relative">
+            <div class="absolute -z-10 top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[140%] h-[140%] bg-primary-container/5 rounded-full blur-3xl"></div>
+            <div class="bg-white/40 backdrop-blur-2xl border border-white/20 rounded-[3rem] p-4 shadow-2xl relative max-w-sm mx-auto overflow-hidden">
+                <div class="bg-[#075e54] text-white p-6 rounded-t-[2.5rem] flex items-center gap-4">
+                    <div class="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center">
+                        <span class="material-symbols-outlined">account_balance_wallet</span>
+                    </div>
+                    <div>
+                        <div class="font-bold">XPENSEDIARY AI</div>
+                        <div class="text-xs opacity-80">online</div>
+                    </div>
+                </div>
+                <div class="p-6 space-y-4 h-[400px] bg-slate-50/50">
+                    <div class="flex justify-end">
+                        <div class="bg-[#dcf8c6] p-3 rounded-2xl rounded-tr-none shadow-sm max-w-[80%] text-sm">Spent ₹450 on Zomato lunch today.</div>
+                    </div>
+                    <div class="flex justify-start">
+                        <div class="bg-white p-3 rounded-2xl rounded-tl-none shadow-sm max-w-[80%] text-sm border border-slate-100">
+                            Recorded! ✅<br/>
+                            <span class="font-bold">Zomato: ₹450</span><br/>
+                            Monthly Budget Remaining: ₹12,400
+                        </div>
+                    </div>
+                    <div class="flex justify-end">
+                        <div class="bg-[#dcf8c6] p-3 rounded-2xl rounded-tr-none shadow-sm max-w-[80%] text-sm">Paid Rent ₹15,000 via UPI.</div>
+                    </div>
+                    <div class="flex justify-start">
+                        <div class="bg-white p-3 rounded-2xl rounded-tl-none shadow-sm max-w-[80%] text-sm border border-slate-100">
+                            Category: <span class="font-bold">Housing</span><br/>
+                            Total Expenses for Oct: ₹22,500
+                        </div>
+                    </div>
+                </div>
             </div>
-            <div class="absolute -top-10 -right-10 w-40 h-40 bg-emerald-200/40 rounded-full blur-3xl"></div>
-            <div class="absolute -bottom-10 -left-10 w-40 h-40 bg-blue-200/40 rounded-full blur-3xl"></div>
         </div>
-    </div>
-</section>
+    </section>
 
-<section class="bg-slate-100 rounded-2xl py-10 px-6 mb-10">
-    <div class="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-8 md:gap-4 items-center">
-        <div class="text-center">
-            <div class="text-4xl font-black text-blue-900 mb-1 tracking-tight">5,000+</div>
-            <div class="text-slate-600 text-sm uppercase tracking-wider">Active Indian Users</div>
+    <!-- Features Section -->
+    <section class="max-w-7xl mx-auto px-8 py-32" id="features">
+        <div class="text-center mb-20">
+            <h2 class="text-4xl font-bold tracking-tight text-primary mb-4">Financial Clarity, Simplified</h2>
+            <p class="text-on-surface-variant max-w-2xl mx-auto">Stop juggling spreadsheets. Use the power of AI to categorize every Rupee spent.</p>
         </div>
-        <div class="text-center md:border-x border-slate-300/70">
-            <div class="text-4xl font-black text-blue-900 mb-1 tracking-tight">2,50,000+</div>
-            <div class="text-slate-600 text-sm uppercase tracking-wider">Rs Tracked to Date</div>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <div class="group bg-surface-container-lowest p-8 rounded-xl shadow-sm border border-outline-variant/10 hover:shadow-xl hover:shadow-primary/5 transition-all">
+                <div class="w-12 h-12 rounded-lg bg-primary-container/10 flex items-center justify-center text-primary mb-6 group-hover:scale-110 transition-transform">
+                    <span class="material-symbols-outlined">bolt</span>
+                </div>
+                <h3 class="text-xl font-bold mb-3 text-primary">Instant UPI Sync</h3>
+                <p class="text-on-surface-variant leading-relaxed">Simply forward your bank SMS or type your spend. We parse everything instantly.</p>
+            </div>
+            <div class="group bg-surface-container-lowest p-8 rounded-xl shadow-sm border border-outline-variant/10 hover:shadow-xl hover:shadow-primary/5 transition-all md:translate-y-6">
+                <div class="w-12 h-12 rounded-lg bg-secondary-container/20 flex items-center justify-center text-secondary mb-6 group-hover:scale-110 transition-transform">
+                    <span class="material-symbols-outlined">pie_chart</span>
+                </div>
+                <h3 class="text-xl font-bold mb-3 text-primary">Smart Categorization</h3>
+                <p class="text-on-surface-variant leading-relaxed">Automatically sorts spending into Zomato, Swiggy, Rent, and Lifestyle categories.</p>
+            </div>
+            <div class="group bg-surface-container-lowest p-8 rounded-xl shadow-sm border border-outline-variant/10 hover:shadow-xl hover:shadow-primary/5 transition-all">
+                <div class="w-12 h-12 rounded-lg bg-error-container/20 flex items-center justify-center text-error mb-6 group-hover:scale-110 transition-transform">
+                    <span class="material-symbols-outlined">lock</span>
+                </div>
+                <h3 class="text-xl font-bold mb-3 text-primary">Bank-Grade Security</h3>
+                <p class="text-on-surface-variant leading-relaxed">End-to-end encrypted tracking. We never store your bank login details.</p>
+            </div>
         </div>
-        <div class="text-center">
-            <div class="text-4xl font-black text-emerald-700 mb-1 tracking-tight">4.9/5</div>
-            <div class="text-slate-600 text-sm uppercase tracking-wider">Average User Rating</div>
-        </div>
-    </div>
-</section>
+    </section>
 
-<section class="py-16" id="how-it-works">
-    <div class="text-center mb-14">
-        <h2 class="text-3xl md:text-4xl font-black tracking-tight mb-3">Ready in 3 simple steps</h2>
-        <p class="text-slate-600 max-w-xl mx-auto">Financial tracking has never been this frictionless.</p>
-    </div>
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
-        <div class="bg-white border border-slate-200 rounded-2xl p-7 text-center">
-            <div class="text-blue-900 text-3xl font-black">01</div>
-            <h3 class="text-lg font-bold mt-4 mb-2">Text Your Expense</h3>
-            <p class="text-slate-600 text-sm">Send a message like "Rs350 Uber" on WhatsApp.</p>
+    <!-- How It Works -->
+    <section class="bg-surface-container-low py-32" id="how-it-works">
+        <div class="max-w-7xl mx-auto px-8">
+            <div class="flex flex-col md:flex-row justify-between items-end mb-16 gap-4">
+                <div>
+                    <h2 class="text-4xl font-bold tracking-tight text-primary">Ready in 3 simple steps</h2>
+                    <p class="text-on-surface-variant mt-2">The fastest setup in the Indian fintech space.</p>
+                </div>
+                <div class="h-[2px] flex-grow mx-8 bg-outline-variant/20 hidden md:block mb-4"></div>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-12">
+                <div class="relative">
+                    <span class="text-[8rem] font-black text-primary/5 absolute -top-16 -left-4 select-none leading-none">01</span>
+                    <div class="relative">
+                        <h4 class="text-2xl font-bold text-primary mb-4">Add Our Number</h4>
+                        <p class="text-on-surface-variant">Save XPENSEDIARY to your contacts and say 'Hi' on WhatsApp.</p>
+                    </div>
+                </div>
+                <div class="relative">
+                    <span class="text-[8rem] font-black text-primary/5 absolute -top-16 -left-4 select-none leading-none">02</span>
+                    <div class="relative">
+                        <h4 class="text-2xl font-bold text-primary mb-4">Text Your Spend</h4>
+                        <p class="text-on-surface-variant">Send a message like "Lunch ₹250" or "Bought Milk ₹60".</p>
+                    </div>
+                </div>
+                <div class="relative">
+                    <span class="text-[8rem] font-black text-primary/5 absolute -top-16 -left-4 select-none leading-none">03</span>
+                    <div class="relative">
+                        <h4 class="text-2xl font-bold text-primary mb-4">Get Weekly Reports</h4>
+                        <p class="text-on-surface-variant">Receive elegant PDF summaries of your monthly spending.</p>
+                    </div>
+                </div>
+            </div>
         </div>
-        <div class="bg-white border border-slate-200 rounded-2xl p-7 text-center">
-            <div class="text-emerald-700 text-3xl font-black">02</div>
-            <h3 class="text-lg font-bold mt-4 mb-2">AI Categorizes</h3>
-            <p class="text-slate-600 text-sm">The system classifies and stores the spend automatically.</p>
-        </div>
-        <div class="bg-white border border-slate-200 rounded-2xl p-7 text-center">
-            <div class="text-blue-900 text-3xl font-black">03</div>
-            <h3 class="text-lg font-bold mt-4 mb-2">View Dashboard</h3>
-            <p class="text-slate-600 text-sm">See insights, totals, and category trends in one place.</p>
-        </div>
-    </div>
-</section>
+    </section>
 
-<section class="py-16" id="features">
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        <div class="bg-white border border-slate-200 rounded-2xl p-6"><h4 class="font-bold text-lg">WhatsApp Integration</h4><p class="text-slate-600 text-sm mt-2">No new app needed.</p></div>
-        <div class="bg-white border border-slate-200 rounded-2xl p-6"><h4 class="font-bold text-lg">Smart Dashboard</h4><p class="text-slate-600 text-sm mt-2">Clear summaries and trends.</p></div>
-        <div class="bg-white border border-slate-200 rounded-2xl p-6"><h4 class="font-bold text-lg">Visual Reports</h4><p class="text-slate-600 text-sm mt-2">Fast pattern recognition.</p></div>
-        <div class="bg-white border border-slate-200 rounded-2xl p-6"><h4 class="font-bold text-lg">Secure by Design</h4><p class="text-slate-600 text-sm mt-2">Your data stays protected.</p></div>
-        <div class="bg-white border border-slate-200 rounded-2xl p-6"><h4 class="font-bold text-lg">Auto-Categorization</h4><p class="text-slate-600 text-sm mt-2">AI-assisted processing and tagging.</p></div>
-        <div class="bg-white border border-slate-200 rounded-2xl p-6"><h4 class="font-bold text-lg">Real-time Sync</h4><p class="text-slate-600 text-sm mt-2">Updates immediately after each message.</p></div>
-    </div>
-</section>
-
-<section class="py-14" id="pricing">
-    <div class="max-w-5xl mx-auto bg-gradient-to-br from-blue-900 to-blue-700 rounded-[2rem] p-10 text-center text-white">
-        <h2 class="text-3xl md:text-4xl font-black mb-6">Start tracking today. Rs0 setup, just results.</h2>
-        <div class="flex flex-col sm:flex-row gap-4 justify-center">
-            <a class="bg-white text-blue-900 px-8 py-3 rounded-xl font-bold text-lg" href="{% url 'dashboard:register' %}">Get Started for Free</a>
-            <a class="bg-blue-800 border border-white/25 text-white px-8 py-3 rounded-xl font-bold text-lg" href="{% url 'dashboard:contact' %}">Contact Support</a>
+    <!-- Testimonials -->
+    <section class="py-32 max-w-7xl mx-auto px-8">
+        <div class="text-center mb-16">
+            <h2 class="text-4xl font-bold tracking-tight text-primary">Trusted by Smart Savers in India</h2>
         </div>
-        <p class="mt-6 text-blue-100 font-medium">XPENSEDIARY is a registered TechSpark product.</p>
-    </div>
-</section>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            <div class="bg-surface-container-lowest p-10 rounded-2xl shadow-sm hover:translate-y-[-4px] transition-transform">
+                <div class="flex gap-1 mb-4 text-secondary">
+                    {% for i in "12345" %}<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">star</span>{% endfor %}
+                </div>
+                <p class="text-on-surface leading-relaxed italic mb-8">"I used to lose track of my UPI spends. XPENSEDIARY has finally helped me see where my money goes each month. 10/10."</p>
+                <div class="font-bold text-primary">Ankit Sharma</div>
+                <div class="text-xs text-on-surface-variant">Software Engineer, Bangalore</div>
+            </div>
+            <div class="bg-surface-container-lowest p-10 rounded-2xl shadow-sm hover:translate-y-[-4px] transition-transform border-2 border-primary-container/10">
+                <div class="flex gap-1 mb-4 text-secondary">
+                    {% for i in "12345" %}<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">star</span>{% endfor %}
+                </div>
+                <p class="text-on-surface leading-relaxed italic mb-8">"Simplest expense manager I've ever used. No complicated apps to download, just WhatsApp. Pure genius."</p>
+                <div class="font-bold text-primary">Priya Nair</div>
+                <div class="text-xs text-on-surface-variant">Architect, Mumbai</div>
+            </div>
+            <div class="bg-surface-container-lowest p-10 rounded-2xl shadow-sm hover:translate-y-[-4px] transition-transform">
+                <div class="flex gap-1 mb-4 text-secondary">
+                    {% for i in "12345" %}<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">star</span>{% endfor %}
+                </div>
+                <p class="text-on-surface leading-relaxed italic mb-8">"Tracking rent and utility bills was a headache. Now I just text the amount. The weekly reports are so aesthetic!"</p>
+                <div class="font-bold text-primary">Rohan Gupta</div>
+                <div class="text-xs text-on-surface-variant">Marketing Head, Delhi</div>
+            </div>
+        </div>
+    </section>
+
+    <!-- FAQs -->
+    <section class="bg-surface-container-high py-32">
+        <div class="max-w-3xl mx-auto px-8">
+            <h2 class="text-4xl font-bold tracking-tight text-primary text-center mb-16">Common Questions</h2>
+            <div class="space-y-4">
+                <div class="bg-surface-container-lowest rounded-xl p-6 border border-outline-variant/10">
+                    <div class="font-bold text-primary">Is it really free for the first month?</div>
+                    <div class="mt-4 text-on-surface-variant leading-relaxed">Yes! Every new user gets 30 days of unlimited expense tracking and AI categorization absolutely free. No credit card required to start.</div>
+                </div>
+                <div class="bg-surface-container-lowest rounded-xl p-6 border border-outline-variant/10">
+                    <div class="font-bold text-primary">How do you protect my data?</div>
+                    <div class="mt-4 text-on-surface-variant leading-relaxed">We use end-to-end encryption for all WhatsApp communications and never store your bank login credentials. Your financial privacy is our priority.</div>
+                </div>
+                <div class="bg-surface-container-lowest rounded-xl p-6 border border-outline-variant/10">
+                    <div class="font-bold text-primary">Can I track my Swiggy and Zomato spends?</div>
+                    <div class="mt-4 text-on-surface-variant leading-relaxed">Absolutely. Our AI is specifically trained on Indian merchants. It recognizes Swiggy, Zomato, Uber, Ola, and local UPI merchant payments instantly.</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- CTA -->
+    <section class="py-32">
+        <div class="max-w-5xl mx-auto px-8 bg-primary rounded-[3rem] p-16 text-center text-white relative overflow-hidden">
+            <div class="absolute top-0 right-0 w-64 h-64 bg-secondary-container/20 rounded-full blur-3xl -mr-32 -mt-32"></div>
+            <div class="absolute bottom-0 left-0 w-64 h-64 bg-primary-container/40 rounded-full blur-3xl -ml-32 -mb-32"></div>
+            <h2 class="text-4xl md:text-5xl font-black mb-6 tracking-tighter">Ready to master your money?</h2>
+            <p class="text-xl opacity-90 mb-10 max-w-xl mx-auto">Join thousands of Indians saving more every month with XPENSEDIARY.</p>
+            <a href="{% url 'dashboard:register' %}" class="px-10 py-5 bg-white text-primary rounded-2xl font-black text-lg hover:scale-105 transition-transform inline-block">
+                Start Your Free Trial
+            </a>
+        </div>
+    </section>
+
+</main>
 {% endblock %}

@@ -1,31 +1,208 @@
 {% extends 'dashboard/base.html' %}
 
-{% block title %}About | XPENSEDIARY{% endblock %}
+{% block title %}XPENSEDIARY | About Us{% endblock %}
 
 {% block content %}
-<section class="max-w-6xl mx-auto py-10">
-    <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-10">
-        <p class="text-xs font-bold uppercase tracking-widest text-emerald-700">About XPENSEDIARY</p>
-        <h1 class="mt-3 text-4xl font-black tracking-tight">Track spending from WhatsApp in seconds</h1>
-        <p class="mt-5 text-slate-600 max-w-3xl leading-7">
-            XPENSEDIARY helps users log daily expenses with simple WhatsApp messages. It is built for low-friction tracking,
-            clear analytics, and practical money habits.
-        </p>
-        <div class="mt-8 grid md:grid-cols-3 gap-4">
-            <div class="rounded-xl border border-slate-200 p-5 bg-slate-50">
-                <h2 class="font-bold">WhatsApp-first</h2>
-                <p class="text-sm text-slate-600 mt-2">No heavy app workflow, just quick expense entries.</p>
-            </div>
-            <div class="rounded-xl border border-slate-200 p-5 bg-slate-50">
-                <h2 class="font-bold">AI-assisted</h2>
-                <p class="text-sm text-slate-600 mt-2">Automatic categorization and receipt support.</p>
-            </div>
-            <div class="rounded-xl border border-slate-200 p-5 bg-slate-50">
-                <h2 class="font-bold">Insights-focused</h2>
-                <p class="text-sm text-slate-600 mt-2">Understand where money goes without extra effort.</p>
+<main class="pt-24">
+
+    <!-- Hero Section -->
+    <section class="max-w-7xl mx-auto px-8 py-20 lg:py-32 grid lg:grid-cols-12 gap-12 items-center">
+        <div class="lg:col-span-7">
+            <span class="inline-block px-4 py-1 bg-secondary-container text-on-secondary-container rounded-full text-sm font-bold tracking-widest uppercase mb-6">
+                Our Mission
+            </span>
+            <h1 class="text-6xl md:text-7xl font-bold text-primary tracking-tighter leading-[1.1] mb-8">
+                Bringing financial <span class="text-secondary">clarity</span> to every Indian.
+            </h1>
+            <p class="text-xl text-on-surface-variant max-w-xl leading-relaxed mb-10">
+                We believe the path to financial freedom shouldn't be paved with complex spreadsheets. It starts with a simple conversation.
+            </p>
+            <div class="flex items-center gap-4">
+                <div class="w-12 h-12 rounded-full bg-primary-container flex items-center justify-center">
+                    <span class="material-symbols-outlined text-on-primary-container">rocket_launch</span>
+                </div>
+                <p class="text-sm font-semibold text-primary">Powering over 1M+ conversations monthly</p>
             </div>
         </div>
-        <p class="mt-8 text-sm text-slate-600">Business identity: XPENSEDIARY is a registered product of TechSpark.</p>
-    </div>
-</section>
+        <div class="lg:col-span-5 relative">
+            <div class="aspect-[4/5] rounded-xl overflow-hidden shadow-2xl">
+                <img class="w-full h-full object-cover"
+                     alt="Modern Indian professional using smartphone in a bright minimalist cafe"
+                     src="https://lh3.googleusercontent.com/aida-public/AB6AXuBQ9GyQq7Aia0u-S_dP6E6wqBxx2f1vL1uq1TGm-0XElr3Fhj--NbEyfaxSIpn3cplg_pQO712p-SXKDNG5qe2LxwBBMqkCQsfF1th6AlVkJwvfRUCjR94ElFxCY-wyct1pjUkHar5I8DsHhi1PAmsiRZVPiFfxbTDV7KAwnslmmmkwhFRaaSvaggglgVDxkBRv3-F_7oiUA8xYQrdmFh_ReSC2SjsBfNs_gLQJG_Advzsgae_1k76_hMoBcCqm7VTB6bW-4gt1p7U"/>
+            </div>
+            <!-- Glass Card Overlay -->
+            <div class="absolute -bottom-6 -left-12 bg-white/80 backdrop-blur-xl p-8 rounded-xl shadow-xl hidden md:block max-w-xs">
+                <p class="text-primary font-bold text-2xl italic tracking-tight">"Expense tracking is finally as easy as texting my mom."</p>
+                <p class="mt-4 text-sm text-on-surface-variant font-medium">— Rahul S., Early Adopter</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- The Story Section -->
+    <section class="bg-surface-container-low py-24">
+        <div class="max-w-7xl mx-auto px-8">
+            <div class="grid lg:grid-cols-2 gap-20 items-center">
+                <!-- Image Collage -->
+                <div class="order-2 lg:order-1 relative h-[500px]">
+                    <div class="absolute top-0 right-0 w-4/5 h-4/5 rounded-xl overflow-hidden z-10">
+                        <img class="w-full h-full object-cover"
+                             alt="Close up of digital financial interface on a clean glass surface"
+                             src="https://lh3.googleusercontent.com/aida-public/AB6AXuCBf064Dr-R-d7wJ8SMMRq-H-nCbWUWL-rqTSWWQvu8K7c-8J8MUEUu9JWLtOB5FHrHo7AQAW3GvY2bTQXPnVUOvsx-buSZvCoy5qRaQ_E4EiD4n3Peb3A1Rih_QGMRWps_SueLmXmvYfmJ9RU0JpEA9dhBeEPr-EsKlNvJt4Iir8VSdhVu0dnIuldVqqJfVZpab6qoXiq_AQd3EqQnJZlLknqRE9le1ujBxf3cIYRjHZGQJVJXalk8kSvsGaj-NN1h8qwhnIX0Iek"/>
+                    </div>
+                    <div class="absolute bottom-0 left-0 w-3/5 h-3/5 rounded-xl overflow-hidden border-8 border-surface-container-low shadow-xl z-20">
+                        <img class="w-full h-full object-cover"
+                             alt="Person holding a gold coin with soft focus of financial district"
+                             src="https://lh3.googleusercontent.com/aida-public/AB6AXuAmSx1OjzjCRDXlaqOCVdkLZO_9rEWpcFQ-ZabhfxkAznBiw2j-RnLjIPmFf0DOYZKu9IWh59omRqskYnAVeFgwpMdLfvH_8fOMpjpo8Bcjt-eExN5eDj4Y_9kzwE1e79rlDA4ePGLAGjVm6jWRSLQjuhS9Z6Hqjfw3HgOoRN4WgzQhZlC6l9jsVVRgaumfzv28QgPfXWYtxvOtnF_gz-uUquum5JqHKm_jMcbLbXrJlqw_ThaWN4mi91D-xwENgEFHK-jUNetIFHc"/>
+                    </div>
+                </div>
+                <!-- Story Text -->
+                <div class="order-1 lg:order-2">
+                    <h2 class="text-4xl font-bold text-primary tracking-tight mb-8">The Story</h2>
+                    <div class="space-y-6 text-on-surface-variant text-lg leading-relaxed">
+                        <p>
+                            XPENSEDIARY began in a cramped Mumbai apartment when our founders realized they had five different financial apps, yet still didn't know where their money went at the end of the month.
+                        </p>
+                        <p>
+                            The problem wasn't a lack of tools; it was a lack of <span class="italic font-semibold text-primary">presence</span>. Most apps required you to leave your life to record your life.
+                        </p>
+                        <p>
+                            We realized that tracking expenses shouldn't feel like a chore. It should happen where you already spend your time. In 2022, we built the first prototype that lived inside WhatsApp, and the response was overwhelming.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Why WhatsApp: Bento Grid -->
+    <section class="py-24 max-w-7xl mx-auto px-8">
+        <div class="text-center mb-16">
+            <h2 class="text-4xl font-bold text-primary tracking-tight mb-4">Why WhatsApp?</h2>
+            <p class="text-on-surface-variant max-w-2xl mx-auto">Leveraging the most ubiquitous platform in India to bring financial intelligence to everyone, everywhere.</p>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+
+            <!-- Bento 1 — wide -->
+            <div class="md:col-span-2 bg-surface-container-lowest p-10 rounded-xl shadow-[0_32px_64px_rgba(25,28,30,0.04)] border border-outline-variant/15 flex flex-col justify-between">
+                <div>
+                    <div class="w-14 h-14 rounded-xl bg-secondary-container flex items-center justify-center mb-6">
+                        <span class="material-symbols-outlined text-on-secondary-container text-3xl">universal_currency</span>
+                    </div>
+                    <h3 class="text-2xl font-bold text-primary mb-4">Zero Learning Curve</h3>
+                    <p class="text-on-surface-variant">If you can send a message, you can manage your wealth. No new apps to download, no complicated menus to navigate. Just type and save.</p>
+                </div>
+                <div class="mt-8 flex gap-2">
+                    <span class="px-3 py-1 bg-surface-container text-xs font-bold rounded-full">98% APP FAMILIARITY</span>
+                    <span class="px-3 py-1 bg-surface-container text-xs font-bold rounded-full">INSTANT SETUP</span>
+                </div>
+            </div>
+
+            <!-- Bento 2 -->
+            <div class="bg-primary-container p-10 rounded-xl flex flex-col justify-center items-center text-center text-white">
+                <span class="material-symbols-outlined text-5xl mb-6">bolt</span>
+                <h3 class="text-2xl font-bold mb-4">Real-time Sync</h3>
+                <p class="text-blue-200">Your data is synced instantly across our cloud, giving you live insights while you're on the move.</p>
+            </div>
+
+            <!-- Bento 3 -->
+            <div class="bg-surface-container-high p-10 rounded-xl flex flex-col justify-between">
+                <h3 class="text-xl font-bold text-primary">Inclusive Design</h3>
+                <p class="text-on-surface-variant mt-4">Optimized for low-bandwidth areas and vernacular support, ensuring no Indian is left behind.</p>
+                <div class="mt-6 pt-6 border-t border-outline-variant/20">
+                    <span class="text-secondary font-bold text-lg">Works on 2G/3G</span>
+                </div>
+            </div>
+
+            <!-- Bento 4 — wide -->
+            <div class="md:col-span-2 bg-surface-container-lowest shadow-[0_32px_64px_rgba(25,28,30,0.04)] rounded-xl overflow-hidden">
+                <div class="h-full grid md:grid-cols-2">
+                    <div class="p-10 flex flex-col justify-center">
+                        <h3 class="text-2xl font-bold text-primary mb-4">Privacy by Default</h3>
+                        <p class="text-on-surface-variant">Leveraging WhatsApp's end-to-end encryption combined with our proprietary security layer.</p>
+                    </div>
+                    <div class="bg-slate-100 overflow-hidden h-48 md:h-full">
+                        <img class="w-full h-full object-cover"
+                             alt="Macro shot of high-tech security chip with glowing blue data paths"
+                             src="https://lh3.googleusercontent.com/aida-public/AB6AXuCNIEVFZihj4GpfIIiGVKBR6NdC-EEyLdOQEvPjSO5DOMBe9ncXOEkKSNFir7ZvHpxM_vxxY5g7ixcIVfloide8Ac1u-ME7yyg6VSx-VKyoh05RXeytw5rsHuuB2qAejEQEMCqTeHa5KQjbYSlNcUAWQEAfrKJLL2XfAFwQ8YKCUKvec1m8Gw_LGig9t0JMKW8II8NnjZXWh9VlZDYITAvXoK3pr2xm4d77SqBsWJcIxpnom1aZW4WkHkB5oM4bMQZvIVjJQWzK8e4"/>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </section>
+
+    <!-- Core Values Section -->
+    <section class="bg-white py-24">
+        <div class="max-w-7xl mx-auto px-8">
+            <div class="flex flex-col md:flex-row justify-between items-end mb-16 gap-4">
+                <h2 class="text-4xl font-bold text-primary tracking-tight">Our Core Values</h2>
+                <p class="text-on-surface-variant max-w-sm">The non-negotiable principles that guide every feature we build.</p>
+            </div>
+            <div class="grid md:grid-cols-3 gap-12">
+
+                <div class="group">
+                    <div class="mb-8 overflow-hidden rounded-xl">
+                        <img class="w-full h-48 object-cover transition-transform duration-500 group-hover:scale-110"
+                             alt="Clean glass architectural structure representing transparency and clarity"
+                             src="https://lh3.googleusercontent.com/aida-public/AB6AXuASONvgws3HwNwYdoMdGRcGUNNuHdcW98Ym9iHzzm1VNHCUn2tIjT-IPycflH_h-iddnvNdGokUttqHOwH5ubN4LAPyb1LjtGBw5HWFEawDyCi5Ao40ieGxU1Wej297C8-ErW0WsaXj9b02goRv6H2Ak_eY9H_62YTWmpcNm9BKObtlBmo9Ar0cPn_i-gMFdHvfemVUyh0rfLirT7KICvVNQ6xe3rEYVZaNqUgv4yJTFoR73jL_P-I5DWGYkvSbFpA7jJDwUIVVx-Y"/>
+                    </div>
+                    <div class="flex items-center gap-3 mb-4">
+                        <span class="material-symbols-outlined text-secondary">visibility</span>
+                        <h3 class="text-xl font-bold text-primary">Transparency</h3>
+                    </div>
+                    <p class="text-on-surface-variant leading-relaxed">No hidden fees, no complicated jargon. We provide clear, actionable insights into your spending habits without the fluff.</p>
+                </div>
+
+                <div class="group">
+                    <div class="mb-8 overflow-hidden rounded-xl">
+                        <img class="w-full h-48 object-cover transition-transform duration-500 group-hover:scale-110"
+                             alt="Digital safe lock illustration with futuristic cyan interface"
+                             src="https://lh3.googleusercontent.com/aida-public/AB6AXuDIYbNIYT3WGznSwYrFBltRbC2i8gS01z__GGYmTgoaTT1xOtcAVDZ8rS7TM0v_k6Jy0KSXtqBRT0U2rpLiGn_-11Cn4Vq0Ckp_nPcmh6OOFpqXzLyDBXtAaW3FMIJCiy8xduX1INMadfQE_hQUAeAKSd9ODmdVPfF26Yc_4SpQp1QQM83jDTrzhU94tVxvK4itHc16tetCHCAlV1BgWRlc7kqEnx9bhyrCpcep7oz-0UdG2UdojUBTQY_N-mlVTFSluhc0myhzjGk"/>
+                    </div>
+                    <div class="flex items-center gap-3 mb-4">
+                        <span class="material-symbols-outlined text-secondary">verified_user</span>
+                        <h3 class="text-xl font-bold text-primary">Security</h3>
+                    </div>
+                    <p class="text-on-surface-variant leading-relaxed">Your financial data is sacred. We use bank-grade encryption and 2FA to ensure your personal information remains yours alone.</p>
+                </div>
+
+                <div class="group">
+                    <div class="mb-8 overflow-hidden rounded-xl">
+                        <img class="w-full h-48 object-cover transition-transform duration-500 group-hover:scale-110"
+                             alt="Minimalist Zen garden with smooth stones representing simplicity and peace"
+                             src="https://lh3.googleusercontent.com/aida-public/AB6AXuDktjGz-RYTUW7psgIwIUyE7NVL_vlJqno9Jyjj5vCxoMwzdvsDRQAx6s0DgHW0rT-lyxZLnOyqjk0uhbHFih6SSC4oUukuPfLcmfZNkTH3AwzG57QBTotNfsxjbZSHxvNAdmrb0G3i2jiUTCBSD_xuJqKt_YUnTPjCrdXxo6qvS5c5XJB7LXuh481PaBEZdQzz8sejsXw9umRx96-rOwR9j3Z7nVItDVoubjX8x4-qIBNyr0NLqyKFoDEhdCciVEpRCS1IDR1y-L8"/>
+                    </div>
+                    <div class="flex items-center gap-3 mb-4">
+                        <span class="material-symbols-outlined text-secondary">star_shine</span>
+                        <h3 class="text-xl font-bold text-primary">Simplicity</h3>
+                    </div>
+                    <p class="text-on-surface-variant leading-relaxed">We strip away the noise. Every feature must pass the 'grandparent test' — if it's not intuitive, it doesn't ship.</p>
+                </div>
+
+            </div>
+        </div>
+    </section>
+
+    <!-- CTA Section -->
+    <section class="py-24 px-8">
+        <div class="max-w-5xl mx-auto bg-primary rounded-[2rem] p-12 md:p-20 text-center relative overflow-hidden">
+            <div class="absolute top-0 right-0 w-64 h-64 bg-primary-container rounded-full blur-[100px] opacity-50 -mr-32 -mt-32"></div>
+            <div class="absolute bottom-0 left-0 w-64 h-64 bg-secondary rounded-full blur-[100px] opacity-20 -ml-32 -mb-32"></div>
+            <h2 class="text-4xl md:text-5xl font-bold text-white mb-8 relative z-10">
+                Join the movement toward effortless finance.
+            </h2>
+            <div class="flex flex-col md:flex-row gap-4 justify-center relative z-10">
+                <a href="{% url 'dashboard:register' %}"
+                   class="bg-secondary text-on-secondary px-10 py-4 rounded-xl font-bold text-lg hover:scale-105 transition-transform inline-block">
+                    Start on WhatsApp
+                </a>
+                <a href="{% url 'dashboard:contact' %}"
+                   class="bg-white/10 backdrop-blur-md text-white border border-white/20 px-10 py-4 rounded-xl font-bold text-lg hover:bg-white/20 transition-all inline-block">
+                    Talk to an Expert
+                </a>
+            </div>
+        </div>
+    </section>
+
+</main>
 {% endblock %}
