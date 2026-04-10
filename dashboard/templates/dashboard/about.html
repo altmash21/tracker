@@ -1,0 +1,31 @@
+{% extends 'dashboard/base.html' %}
+
+{% block title %}About | XPENSEDIARY{% endblock %}
+
+{% block content %}
+<section class="max-w-6xl mx-auto py-10">
+    <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-10">
+        <p class="text-xs font-bold uppercase tracking-widest text-emerald-700">About XPENSEDIARY</p>
+        <h1 class="mt-3 text-4xl font-black tracking-tight">Track spending from WhatsApp in seconds</h1>
+        <p class="mt-5 text-slate-600 max-w-3xl leading-7">
+            XPENSEDIARY helps users log daily expenses with simple WhatsApp messages. It is built for low-friction tracking,
+            clear analytics, and practical money habits.
+        </p>
+        <div class="mt-8 grid md:grid-cols-3 gap-4">
+            <div class="rounded-xl border border-slate-200 p-5 bg-slate-50">
+                <h2 class="font-bold">WhatsApp-first</h2>
+                <p class="text-sm text-slate-600 mt-2">No heavy app workflow, just quick expense entries.</p>
+            </div>
+            <div class="rounded-xl border border-slate-200 p-5 bg-slate-50">
+                <h2 class="font-bold">AI-assisted</h2>
+                <p class="text-sm text-slate-600 mt-2">Automatic categorization and receipt support.</p>
+            </div>
+            <div class="rounded-xl border border-slate-200 p-5 bg-slate-50">
+                <h2 class="font-bold">Insights-focused</h2>
+                <p class="text-sm text-slate-600 mt-2">Understand where money goes without extra effort.</p>
+            </div>
+        </div>
+        <p class="mt-8 text-sm text-slate-600">Business identity: XPENSEDIARY is a registered product of TechSpark.</p>
+    </div>
+</section>
+{% endblock %}

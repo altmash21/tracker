@@ -59,6 +59,26 @@ def home(request):
     return render(request, 'dashboard/home.html')
 
 
+def about(request):
+    """Public about page."""
+    return render(request, 'dashboard/about.html')
+
+
+def contact(request):
+    """Public contact page."""
+    return render(request, 'dashboard/contact.html')
+
+
+def privacy_policy(request):
+    """Public privacy policy page."""
+    return render(request, 'dashboard/privacy_policy.html')
+
+
+def terms_of_service(request):
+    """Public terms of service page."""
+    return render(request, 'dashboard/terms_of_service.html')
+
+
 def register(request):
     """User registration without OTP or WhatsApp verification"""
     if request.method == 'POST':
