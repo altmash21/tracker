@@ -102,6 +102,35 @@ class ExpenseParser:
             'message': f"Category '{category_word}' not found. Available categories: {self._get_category_list()}"
         }
 
+    def _safe_json_parse(self, text: str) -> dict:
+        payload = (text or '').strip()
+        if not payload:
+            return None
+
+        if payload.startswith('```'):
+            lines = payload.splitlines()
+            if lines and lines[0].strip().startswith('```'):
+                lines = lines[1:]
+            if lines and lines[-1].strip().startswith('```'):
+                lines = lines[:-1]
+            payload = '\n'.join(lines).strip()
+            if payload.lower().startswith('json'):
+                payload = payload[4:].strip()
+
+        try:
+            return json.loads(payload)
+        except (json.JSONDecodeError, TypeError, ValueError):
+            pass
+
+        match = re.search(r'\{[\s\S]*\}', payload)
+        if not match:
+            return None
+
+        try:
+            return json.loads(match.group(0))
+        except (json.JSONDecodeError, TypeError, ValueError):
+            return None
+
     def _parse_natural_language(self, message: str):
         if not self.gemini_key:
             return {
@@ -142,22 +171,57 @@ Rules:
   }}
 """
 
-        try:
-            client = genai.Client(api_key=self.gemini_key)
-            response = client.models.generate_content(
-                model='gemini-2.5-flash-lite',
-                contents=prompt,
-                generation_config={'temperature': 0.2},
-            )
+        retry_prompt = """Extract ONLY the essential expense details.
+
+Return STRICT JSON:
+{
+"amount": number,
+"category": "string",
+"description": "string"
+}
+
+Rules:
+
+* Focus only on amount and category
+* Ignore extra text
+* Category must be simple (Food, Travel, Groceries, etc.)
+* If unsure:
+  {
+  "amount": 0,
+  "category": "Other",
+  "description": "Unable to parse"
+  }
+"""
+
+        prompts = [prompt, retry_prompt]
+
+        for attempt, prompt_text in enumerate(prompts, start=1):
+            try:
+                client = genai.Client(api_key=self.gemini_key)
+                response = client.models.generate_content(
+                    model='gemini-2.5-flash-lite',
+                    contents=prompt_text,
+                    config={'temperature': 0.2},
+                )
+            except Exception as e:
+                logger.warning('Natural language Gemini API error (attempt %d): %s', attempt, e)
+                if attempt < len(prompts):
+                    continue
+                return {
+                    'error': 'parse_failed',
+                    'message': 'Could not parse expense message. Please use format: 120 petrol'
+                }
 
             response_text = (response.text or '').strip()
-            if response_text.startswith('```'):
-                response_text = response_text.split('```')[1]
-                if response_text.startswith('json'):
-                    response_text = response_text[4:]
-            response_text = response_text.strip()
-
-            parsed = json.loads(response_text)
+            parsed = self._safe_json_parse(response_text)
+            if parsed is None:
+                logger.warning('Natural language Gemini JSON parse failed (attempt %d)', attempt)
+                if attempt < len(prompts):
+                    continue
+                return {
+                    'error': 'parse_failed',
+                    'message': 'Could not parse expense message. Please use format: 120 petrol'
+                }
 
             amount = parsed.get('amount', 0)
             description = str(parsed.get('description', '')).strip() or message[:120]
@@ -200,12 +264,10 @@ Rules:
                 'date': timezone.now().date(),
             }
 
-        except Exception as e:
-            logger.warning('Natural language parsing failed: %s', e)
-            return {
-                'error': 'parse_failed',
-                'message': 'Could not parse expense message. Please use format: 120 petrol'
-            }
+        return {
+            'error': 'parse_failed',
+            'message': 'Could not parse expense message. Please use format: 120 petrol'
+        }
     
     def _tier1_exact_match(self, category_word):
         """Tier 1: Check if the word exactly matches any category name (case-insensitive)"""
@@ -273,25 +335,76 @@ If you cannot categorize or the category is not in the list, return:
     "category": "Other",
     "description": "Unable to categorize"
 }}"""
+
+            retry_prompt = """Extract ONLY the essential expense details.
+
+Return STRICT JSON:
+{
+"amount": number,
+"category": "string",
+"description": "string"
+}
+
+Rules:
+
+* Focus only on amount and category
+* Ignore extra text
+* Category must be simple (Food, Travel, Groceries, etc.)
+* If unsure:
+  {
+  "amount": 0,
+  "category": "Other",
+  "description": "Unable to parse"
+  }
+"""
+
+            prompts = [prompt, retry_prompt]
             
             # Call Gemini 2.5 Flash-Lite (fastest model)
             client = genai.Client(api_key=self.gemini_key)
-            response = client.models.generate_content(
-                model="gemini-2.5-flash-lite",
-                contents=prompt,
-                generation_config={"temperature": 0.3}
-            )
-            
-            # Parse response
-            response_text = response.text.strip()
-            
-            # Remove markdown code blocks if present
-            if response_text.startswith('```'):
-                response_text = response_text.split('```')[1]
-                if response_text.startswith('json'):
-                    response_text = response_text[4:]
-            
-            parsed = json.loads(response_text)
+            parsed = None
+            api_error = None
+            for attempt, prompt_text in enumerate(prompts, start=1):
+                try:
+                    response = client.models.generate_content(
+                        model="gemini-2.5-flash-lite",
+                        contents=prompt_text,
+                        config={"temperature": 0.3}
+                    )
+                except Exception as e:
+                    api_error = e
+                    logger.warning('Tier 3 Gemini API error (attempt %d): %s', attempt, e)
+                    if attempt < len(prompts):
+                        continue
+                    break
+
+                parsed = self._safe_json_parse((response.text or '').strip())
+                if parsed is None:
+                    logger.warning('Tier 3 Gemini JSON parse failed (attempt %d)', attempt)
+                    if attempt < len(prompts):
+                        continue
+                    break
+
+                api_error = None
+                break
+
+            if parsed is None:
+                if api_error:
+                    error_str = str(api_error).lower()
+                    if '429' in str(api_error) or 'resource_exhausted' in error_str or 'quota' in error_str:
+                        logger.warning(f"Gemini quota exhausted: {api_error}")
+                        return {
+                            'error': 'gemini_quota_exceeded',
+                            'message': f"AI is temporarily unavailable. Please try later or use one of these categories: {self._get_category_list()}"
+                        }
+
+                    logger.error(f"Gemini API error: {api_error}", exc_info=True)
+                    return {
+                        'error': 'gemini_error',
+                        'message': f"Unable to categorize. Available categories: {self._get_category_list()}"
+                    }
+
+                return self._get_fallback_error()
             
             # Validate response structure
             if not all(k in parsed for k in ['amount', 'category', 'description']):
@@ -327,10 +440,6 @@ If you cannot categorize or the category is not in the list, return:
                 'description': str(parsed['description']).strip(),
                 'date': timezone.now().date()
             }
-        
-        except (json.JSONDecodeError, ValueError) as e:
-            logger.warning(f"Gemini response parse error: {e}")
-            return self._get_fallback_error()
         
         except Exception as e:
             # Handle API errors (429, RESOURCE_EXHAUSTED, etc.)
