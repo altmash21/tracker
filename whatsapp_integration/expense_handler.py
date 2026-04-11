@@ -58,7 +58,7 @@ class ExpenseParser:
         match = re.match(pattern, message, re.IGNORECASE)
         
         if not match:
-            return None
+            return self._parse_natural_language(message)
         
         amount_str, category_word, description = match.groups()
         amount = Decimal(amount_str)
@@ -101,6 +101,111 @@ class ExpenseParser:
             'error': 'category_not_found',
             'message': f"Category '{category_word}' not found. Available categories: {self._get_category_list()}"
         }
+
+    def _parse_natural_language(self, message: str):
+        if not self.gemini_key:
+            return {
+                'error': 'parse_failed',
+                'message': 'Could not parse expense message. Please use format: 120 petrol'
+            }
+
+        try:
+            from google import genai
+        except ImportError:
+            logger.warning('google-genai not installed, skipping natural language parsing')
+            return {
+                'error': 'parse_failed',
+                'message': 'Could not parse expense message. Please use format: 120 petrol'
+            }
+
+        prompt = f"""Extract expense details from this message:
+
+\"{message}\"
+
+Return ONLY valid JSON:
+{{
+"amount": number,
+"category": "string",
+"description": "string"
+}}
+
+Rules:
+
+* Extract amount from sentence
+* Infer category (Food, Travel, Groceries, etc.)
+* Description should be short (e.g. "burger", "zomato dinner")
+* If unsure:
+  {{
+  "amount": 0,
+  "category": "Other",
+  "description": "Unable to parse"
+  }}
+"""
+
+        try:
+            client = genai.Client(api_key=self.gemini_key)
+            response = client.models.generate_content(
+                model='gemini-2.5-flash-lite',
+                contents=prompt,
+                generation_config={'temperature': 0.2},
+            )
+
+            response_text = (response.text or '').strip()
+            if response_text.startswith('```'):
+                response_text = response_text.split('```')[1]
+                if response_text.startswith('json'):
+                    response_text = response_text[4:]
+            response_text = response_text.strip()
+
+            parsed = json.loads(response_text)
+
+            amount = parsed.get('amount', 0)
+            description = str(parsed.get('description', '')).strip() or message[:120]
+            category_name = str(parsed.get('category', 'Other')).strip() or 'Other'
+
+            try:
+                amount = Decimal(str(amount))
+            except (ValueError, TypeError):
+                amount = Decimal('0')
+
+            if amount <= 0:
+                return {
+                    'error': 'parse_failed',
+                    'message': 'Could not parse expense message. Please use format: 120 petrol'
+                }
+
+            category = Category.objects.filter(
+                user=self.user,
+                name__iexact=category_name,
+                is_active=True,
+            ).first()
+
+            if not category:
+                category = Category.objects.filter(
+                    user=self.user,
+                    name__iexact='Other',
+                    is_active=True,
+                ).first()
+
+            if not category:
+                return {
+                    'error': 'category_not_found',
+                    'message': f"Category not found. Available categories: {self._get_category_list()}"
+                }
+
+            return {
+                'amount': amount,
+                'category': category,
+                'description': description,
+                'date': timezone.now().date(),
+            }
+
+        except Exception as e:
+            logger.warning('Natural language parsing failed: %s', e)
+            return {
+                'error': 'parse_failed',
+                'message': 'Could not parse expense message. Please use format: 120 petrol'
+            }
     
     def _tier1_exact_match(self, category_word):
         """Tier 1: Check if the word exactly matches any category name (case-insensitive)"""
