@@ -100,8 +100,7 @@ def process_receipt(image_path: str, user) -> Expense:
         if existing_expense:
             return existing_expense
 
-    ocr_result = extract_text_from_image(image_path)
-    text = (ocr_result.get('text') or '').strip()
+    text = (extract_text_from_image(image_path) or '').strip()
     if not text:
         raise OCRException('No readable text found in receipt')
 
@@ -113,7 +112,10 @@ def process_receipt(image_path: str, user) -> Expense:
     description = _clean_description(text)
 
     if not is_confident:
-        ai_result = categorize_with_ai(text)
+        category_names = list(
+            Category.objects.filter(user=user, is_active=True).values_list('name', flat=True)
+        )
+        ai_result = categorize_with_ai(text, category_names=category_names)
         amount = ai_result.get('amount') or amount
         category_name = ai_result.get('category') or category_name
         description = ai_result.get('description') or description
@@ -133,7 +135,7 @@ def process_receipt(image_path: str, user) -> Expense:
         {
             'expense_id': expense.id,
             'extracted_text': text,
-            'raw_ocr_response': ocr_result.get('raw', {}),
+            'raw_ocr_response': {},
             'amount': float(expense.amount),
             'category': expense.category.name,
             'description': expense.description,

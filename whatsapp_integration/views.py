@@ -3,14 +3,17 @@ import logging
 
 from django.conf import settings
 from django.http import HttpResponse, JsonResponse
+from django.utils import timezone
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_http_methods
 
-from expenses.models import Expense
+from expenses.models import Category, Expense
 from users.services import get_or_create_whatsapp_user
 
 from .exceptions import AICategoriaztionException, AmountNotFoundException, OCRException
+from .ai_categorization_service import categorize_with_ai
 from .expense_handler import ExpenseParser, StatementGenerator, handle_login_command
+from .google_vision_service import extract_text_from_image
 from .receipt_processor import process_receipt
 from .whatsapp_service import WhatsAppService
 
@@ -143,26 +146,68 @@ def process_message(message):
                 )
                 return
 
+            extracted_text = extract_text_from_image(image_path)
+            if not extracted_text:
+                whatsapp_service.send_message(
+                    from_number,
+                    with_techspark_footer(
+                        "📷 Couldn't read this receipt clearly.\n"
+                        "Try sending as text: 120 food"
+                    )
+                )
+                return
+
             try:
-                expense = process_receipt(image_path, user)
-                whatsapp_service.send_message(
-                    from_number,
-                    with_techspark_footer(f'✅ ₹{expense.amount} added under {expense.category.name} from receipt')
+                category_names = list(
+                    Category.objects.filter(user=user, is_active=True).values_list('name', flat=True)
                 )
-            except OCRException:
-                whatsapp_service.send_message(
-                    from_number,
-                    with_techspark_footer('❌ Couldn\'t read receipt. Please type: amount category')
+                ai_result = categorize_with_ai(extracted_text, category_names=category_names)
+
+                amount = ai_result.get('amount')
+                category_name = ai_result.get('category')
+                description = (ai_result.get('description') or '').strip() or 'Receipt expense'
+
+                category = Category.objects.filter(
+                    user=user,
+                    name__iexact=category_name,
+                    is_active=True,
+                ).first()
+
+                if not amount or float(amount) <= 0 or not category:
+                    whatsapp_service.send_message(
+                        from_number,
+                        with_techspark_footer(
+                            "📷 Couldn't read this receipt clearly.\n"
+                            "Try sending as text: 120 food"
+                        )
+                    )
+                    return
+
+                expense = Expense.objects.create(
+                    user=user,
+                    category=category,
+                    amount=amount,
+                    description=description,
+                    source='ocr',
                 )
-            except AmountNotFoundException:
+
                 whatsapp_service.send_message(
                     from_number,
-                    with_techspark_footer('🔍 Found receipt but no total. Reply with amount to confirm')
+                    with_techspark_footer(
+                        "✅ Receipt scanned!\n"
+                        f"💰 Amount: {user.currency_symbol}{expense.amount}\n"
+                        f"📂 Category: {category.icon} {category.name}\n"
+                        f"📝 {expense.description}"
+                    )
                 )
-            except AICategoriaztionException:
+            except Exception:
+                logger.exception('Failed processing receipt with Gemini flow')
                 whatsapp_service.send_message(
                     from_number,
-                    with_techspark_footer('❌ Could not categorize the receipt automatically. Please type: amount category')
+                    with_techspark_footer(
+                        "📷 Couldn't read this receipt clearly.\n"
+                        "Try sending as text: 120 food"
+                    )
                 )
             return
 
@@ -214,6 +259,36 @@ def process_user_message(user, text):
         return get_help_message()
 
     if 'error' in result:
+        if result.get('error') == 'category_not_found':
+            category_names = list(
+                Category.objects.filter(user=user, is_active=True).values_list('name', flat=True)
+            )
+            ai_result = categorize_with_ai(text, category_names=category_names)
+
+            ai_amount = ai_result.get('amount')
+            ai_category_name = ai_result.get('category')
+            ai_description = (ai_result.get('description') or '').strip() or text[:120]
+
+            ai_category = Category.objects.filter(
+                user=user,
+                name__iexact=ai_category_name,
+                is_active=True,
+            ).first()
+
+            if ai_category and ai_amount and float(ai_amount) > 0:
+                expense = Expense.objects.create(
+                    user=user,
+                    category=ai_category,
+                    amount=ai_amount,
+                    description=ai_description,
+                    date=timezone.now().date(),
+                    source='whatsapp',
+                )
+                return (
+                    f'✅ Recorded: {user.currency_symbol}{expense.amount} '
+                    f'under {expense.category.icon} {expense.category.name}'
+                )
+
         return f"❌ {result['message']}"
 
     expense = Expense.objects.create(

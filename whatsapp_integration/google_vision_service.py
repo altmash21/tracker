@@ -1,64 +1,60 @@
 import logging
 import os
+import mimetypes
 
-from google.cloud import vision
-from google.protobuf.json_format import MessageToDict
-
-from .exceptions import OCRException
+import google.genai as genai
 
 logger = logging.getLogger(__name__)
 
 
-def extract_text_from_image(image_path: str) -> dict:
-    """Run Google Vision OCR on a local image file."""
-    credentials_path = os.environ.get('GOOGLE_APPLICATION_CREDENTIALS')
-    if not credentials_path:
-        raise OCRException('GOOGLE_APPLICATION_CREDENTIALS is not set')
-
-    if not os.path.exists(credentials_path):
-        raise OCRException(f'Google credentials file not found: {credentials_path}')
+def extract_text_from_image(image_path: str) -> str:
+    """Run Gemini multimodal OCR on a local image file and return raw extracted text."""
+    api_key = os.environ.get('GEMINI_API_KEY')
+    if not api_key:
+        logger.warning('GEMINI_API_KEY is not set; OCR skipped')
+        return ''
 
     if not image_path or not os.path.exists(image_path):
-        raise OCRException(f'Image file not found: {image_path}')
+        logger.error('Image file not found for OCR: %s', image_path)
+        return ''
 
     try:
-        client = vision.ImageAnnotatorClient()
         with open(image_path, 'rb') as image_file:
-            content = image_file.read()
+            image_data = image_file.read()
 
-        image = vision.Image(content=content)
-        response = client.document_text_detection(image=image)
-        raw_response = MessageToDict(response._pb, preserving_proto_field_name=True)
+        mime_type, _ = mimetypes.guess_type(image_path)
+        mime_type = mime_type or 'image/jpeg'
 
-        logger.info('Google Vision raw response for %s: %s', image_path, raw_response)
+        client = genai.Client(api_key=api_key)
+        response = client.models.generate_content(
+            model='gemini-2.5-flash-lite',
+            contents=[
+                {
+                    'role': 'user',
+                    'parts': [
+                        {
+                            'text': (
+                                'You are a receipt OCR engine. Extract ALL text from this '
+                                'receipt image exactly as it appears. Return only the raw '
+                                'text, no formatting, no explanation.'
+                            )
+                        },
+                        {
+                            'inline_data': {
+                                'mime_type': mime_type,
+                                'data': image_data,
+                            }
+                        }
+                    ]
+                }
+            ],
+            config={
+                'temperature': 0,
+            },
+        )
 
-        if response.error.message:
-            raise OCRException(response.error.message)
-
-        text = ''
-        confidence = 0.0
-
-        if response.full_text_annotation:
-            text = response.full_text_annotation.text or ''
-            pages = getattr(response.full_text_annotation, 'pages', []) or []
-            confidences = [getattr(page, 'confidence', None) for page in pages if getattr(page, 'confidence', None) is not None]
-            if confidences:
-                confidence = float(sum(confidences) / len(confidences))
-
-        if not text.strip() and raw_response.get('text_annotations'):
-            text = raw_response['text_annotations'][0].get('description', '')
-
-        if not text.strip():
-            raise OCRException('No text detected in receipt image')
-
-        return {
-            'text': text.strip(),
-            'confidence': float(confidence),
-            'raw': raw_response,
-        }
-
-    except OCRException:
-        raise
-    except Exception as exc:
-        logger.exception('OCR failed for %s', image_path)
-        raise OCRException(str(exc))
+        extracted = (response.text or '').strip()
+        return extracted
+    except Exception:
+        logger.exception('Gemini OCR failed for %s', image_path)
+        return ''

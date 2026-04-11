@@ -100,7 +100,7 @@ def _normalize_result(parsed):
     }
 
 
-def categorize_with_ai(text: str) -> dict:
+def categorize_with_ai(text: str, category_names: list = None) -> dict:
     """Use Gemini to infer amount, category, and description from receipt text."""
     # NOTE: OPENAI_API_KEY is no longer used; remove it from your .env and use GEMINI_API_KEY.
     api_key = os.environ.get('GEMINI_API_KEY')
@@ -109,6 +109,10 @@ def categorize_with_ai(text: str) -> dict:
         return _keyword_fallback(text)
 
     try:
+        categories_line = 'Any reasonable expense category'
+        if category_names:
+            categories_line = ', '.join([str(name).strip() for name in category_names if str(name).strip()])
+
         client = _build_client(api_key)
         response = client.models.generate_content(
             model='gemini-2.5-flash-lite',
@@ -118,11 +122,15 @@ def categorize_with_ai(text: str) -> dict:
                     'parts': [
                         {
                             'text': (
-                                'You extract structured expense data from receipts. '
-                                'Return ONLY valid JSON with keys: amount (number), category (string), description (string). '
-                                'Do not include markdown, code fences, or explanation text.\n\n'
-                                'Extract amount, category, and description from this receipt text:\n'
-                                + text
+                                'You extract structured expense data from receipts.\n'
+                                f'Available categories: {categories_line}\n'
+                                f'Receipt text: {text}\n'
+                                'Return ONLY valid JSON:\n'
+                                '{\n'
+                                '  "amount": <total amount as number>,\n'
+                                '  "category": "<best match from available categories>",\n'
+                                '  "description": "<merchant name or short description>"\n'
+                                '}'
                             )
                         }
                     ]
@@ -139,15 +147,13 @@ def categorize_with_ai(text: str) -> dict:
 
         return _normalize_result(parsed)
 
-    except AICategoriaztionException:
-        raise
     except Exception as exc:
         err = str(exc)
         if '429' in err or 'RESOURCE_EXHAUSTED' in err:
             logger.warning('Gemini quota exceeded, using keyword fallback')
             return _keyword_fallback(text)
-        logger.exception('AI categorization failed')
-        raise AICategoriaztionException(err)
+        logger.exception('AI categorization failed, using keyword fallback')
+        return _keyword_fallback(text)
 
 
 def categorize_from_image_with_gemini(image_path: str) -> dict:
