@@ -3,13 +3,14 @@ import os
 import mimetypes
 
 import google.genai as genai
+from django.conf import settings
 
 logger = logging.getLogger(__name__)
 
 
 def extract_text_from_image(image_path: str) -> str:
     """Run Gemini multimodal OCR on a local image file and return raw extracted text."""
-    api_key = os.environ.get('GEMINI_API_KEY')
+    api_key = getattr(settings, 'GEMINI_API_KEY', '') or os.environ.get('GEMINI_API_KEY', '')
     if not api_key:
         logger.warning('GEMINI_API_KEY is not set; OCR skipped')
         return ''
@@ -54,7 +55,9 @@ def extract_text_from_image(image_path: str) -> str:
         )
 
         extracted = (response.text or '').strip()
+        logger.info('Gemini OCR extracted %d characters from %s', len(extracted), image_path)
         return extracted
+
     except Exception:
         logger.exception('Gemini OCR failed for %s', image_path)
         return ''
