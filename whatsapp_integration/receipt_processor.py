@@ -17,6 +17,8 @@ FALLBACK_EXPENSE = {
     'amount': 0,
     'category': 'Other',
     'description': 'Unable to parse',
+    'merchant': 'Unknown',
+    'date': None,
 }
 
 ALLOWED_CATEGORIES = {
@@ -74,6 +76,8 @@ def _parse_expense_payload(content: str) -> dict:
     amount = payload.get('amount', 0)
     category = str(payload.get('category', 'Other')).strip() or 'Other'
     description = str(payload.get('description', 'Unable to parse')).strip() or 'Unable to parse'
+    merchant = str(payload.get('merchant', 'Unknown')).strip() or 'Unknown'
+    date = payload.get('date')
 
     try:
         amount = float(amount)
@@ -87,6 +91,8 @@ def _parse_expense_payload(content: str) -> dict:
         'amount': amount,
         'category': category,
         'description': description,
+        'merchant': merchant,
+        'date': date,
     }
 
 
@@ -178,7 +184,9 @@ Return ONLY valid JSON:
 {
 "amount": number,
 "category": "string",
-"description": "string"
+"description": "string",
+"merchant": "string",
+"date": "YYYY-MM-DD"
 }
 
 Strict Rules:
@@ -189,22 +197,28 @@ Strict Rules:
 * Category must be one of: Food, Travel, Groceries, Shopping, Bills, Entertainment, Other
 * Match category to the closest logical type
 * Description must include merchant name + short context (e.g. "Dominos pizza", "Uber ride")
+* Merchant: extract the business/store name
+* Date: extract the transaction date in YYYY-MM-DD format (or use today's date if not found)
 
 If uncertain:
 {
 "amount": 0,
 "category": "Other",
-"description": "Unable to parse"
+"description": "Unable to parse",
+"merchant": "Unknown",
+"date": null
 }
 """
 
-    retry_prompt = """Extract ONLY the FINAL payable amount and category from this receipt.
+    retry_prompt = """Extract ONLY the FINAL payable amount, merchant, and category from this receipt.
 
 Return STRICT JSON ONLY:
 {
 "amount": number,
 "category": "string",
-"description": "string"
+"description": "string",
+"merchant": "string",
+"date": "YYYY-MM-DD"
 }
 
 Rules:
@@ -212,6 +226,8 @@ Rules:
 * Focus only on final amount
 * Ignore all other numbers
 * Category must be one of: Food, Travel, Groceries, Shopping, Bills, Entertainment, Other
+* Merchant is the business/store name
+* Date in YYYY-MM-DD format or null
 * If unsure, return fallback JSON
 """
 
@@ -221,7 +237,7 @@ Rules:
     for attempt, prompt in enumerate(prompts, start=1):
         try:
             response = client.models.generate_content(
-                model='gemini-2.5-flash',
+                model='gemini-2.5-flash-lite',
                 contents=[
                     {
                         'role': 'user',
@@ -301,6 +317,8 @@ Rules:
 
 def process_receipt(image_path: str, user) -> Expense:
     """Parse a receipt image with Gemini and create the expense."""
+    from datetime import datetime, date as date_type
+    
     if not image_path or not os.path.exists(image_path):
         raise ValueError('Receipt image file not found')
 
@@ -323,6 +341,12 @@ def process_receipt(image_path: str, user) -> Expense:
 
     category_name = parsed.get('category') or 'Other'
     description = _clean_description(parsed.get('description') or '') or 'Unable to parse'
+    merchant = str(parsed.get('merchant') or 'Unknown').strip() or 'Unknown'
+    
+    # Enhance description with merchant if available
+    if merchant and merchant.lower() != 'unknown':
+        if merchant not in description:
+            description = f"{merchant}: {description}" if description != 'Unable to parse' else merchant
 
     if amount <= 0:
         raise ValueError('No bill amount found in receipt image')
@@ -332,13 +356,37 @@ def process_receipt(image_path: str, user) -> Expense:
 
     category = _get_existing_or_other_category(user, category_name)
 
+    # Parse receipt date if available
+    receipt_date = None
+    date_str = parsed.get('date')
+    if date_str:
+        try:
+            receipt_date = datetime.strptime(str(date_str), '%Y-%m-%d').date()
+        except (ValueError, TypeError):
+            pass
+    
+    # Use current date if receipt date not found
+    if not receipt_date:
+        from django.utils import timezone
+        receipt_date = timezone.now().date()
+
     expense = Expense.objects.create(
         user=user,
         amount=amount,
         category=category,
         description=description,
+        date=receipt_date,
         source='ocr',
     )
+
+    # Learn keywords from receipt (similar to text parser)
+    try:
+        from .expense_handler import ExpenseParser
+        parser = ExpenseParser(user)
+        parser._learn_from_ai_result(description, merchant, category)
+        logger.info('[Receipt] Auto-learned keywords for category %s from merchant %s', category.name, merchant)
+    except Exception as e:
+        logger.warning('[Receipt] Failed to learn keywords: %s', e)
 
     cache.set(
         cache_key,
@@ -349,6 +397,8 @@ def process_receipt(image_path: str, user) -> Expense:
             'amount': float(expense.amount),
             'category': expense.category.name,
             'description': expense.description,
+            'merchant': merchant,
+            'date': str(receipt_date),
         },
         timeout=86400,
     )

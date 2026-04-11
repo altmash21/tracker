@@ -100,15 +100,24 @@ def handle_webhook(request):
             return HttpResponse(status=200)
 
         message = messages[0]
-        if message.get('type') != 'text':
+        message_type = message.get('type')
+        
+        # Allow text and image messages; ignore other types
+        if message_type == 'text':
+            message_text = message.get('text', {}).get('body', '').strip()
+            if not message_text:
+                return HttpResponse(status=200)
+            logger.info('Processing text message: %s', message_text)
+            process_message(message)
             return HttpResponse(status=200)
-
-        message_text = message.get('text', {}).get('body', '').strip()
-        if not message_text:
+        
+        elif message_type == 'image':
+            logger.info('Processing image message')
+            process_message(message)
             return HttpResponse(status=200)
-
-        logger.info('Processing user message: %s', message_text)
-        process_message(message)
+        
+        # Silently ignore other message types (audio, video, document, etc.)
+        logger.info('Ignoring unsupported message type: %s', message_type)
         return HttpResponse(status=200)
 
     except json.JSONDecodeError:
