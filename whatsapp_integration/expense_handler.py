@@ -52,6 +52,46 @@ class ExpenseParser:
         Or error dict with keys: error, message
         """
         message = message.strip()
+
+        multi_results = self._preprocess_multi_expense(message)
+        if multi_results:
+            normalized_results = []
+            for item in multi_results:
+                category_name = item.get('category_name', '')
+                category = Category.objects.filter(
+                    user=self.user,
+                    name__iexact=category_name,
+                    is_active=True
+                ).first()
+
+                if not category and category_name.lower() == 'fuel':
+                    category = Category.objects.filter(
+                        user=self.user,
+                        name__iregex=r'^(transport|travel|fuel)$',
+                        is_active=True
+                    ).first()
+
+                if not category:
+                    category = Category.objects.filter(
+                        user=self.user,
+                        name__iexact='Other',
+                        is_active=True
+                    ).first()
+
+                if not category:
+                    continue
+
+                normalized_results.append(
+                    {
+                        'amount': item['amount'],
+                        'category': category,
+                        'description': item['description'],
+                        'date': timezone.now().date(),
+                    }
+                )
+
+            if normalized_results:
+                return normalized_results
         
         # Pattern: number followed by category name
         pattern = r'^(\d+(?:\.\d{1,2})?)\s+(\w+)(?:\s+(.+))?$'
@@ -101,6 +141,67 @@ class ExpenseParser:
             'error': 'category_not_found',
             'message': f"Category '{category_word}' not found. Available categories: {self._get_category_list()}"
         }
+
+    def _preprocess_multi_expense(self, message: str):
+        if not message:
+            return None
+
+        if not re.search(r'\band\b|,|&', message, re.IGNORECASE):
+            return None
+
+        parts = [
+            part.strip()
+            for part in re.split(r'\s*(?:,|&|\band\b)\s*', message, flags=re.IGNORECASE)
+            if part.strip()
+        ]
+
+        if len(parts) < 2:
+            return None
+
+        keyword_map = {
+            'Fuel': ['petrol', 'fuel', 'diesel'],
+            'Food': ['food', 'burger', 'pizza', 'zomato', 'swiggy'],
+            'Travel': ['uber', 'auto', 'taxi', 'bus'],
+            'Shopping': ['amazon', 'flipkart', 'shopping'],
+        }
+
+        results = []
+        for segment in parts:
+            amount_match = re.search(r'\d+(?:\.\d{1,2})?', segment)
+            if not amount_match:
+                continue
+
+            try:
+                amount = Decimal(amount_match.group(0))
+            except Exception:
+                continue
+
+            if amount <= 0:
+                continue
+
+            category_name = None
+            lower_segment = segment.lower()
+            for mapped_category, keywords in keyword_map.items():
+                if any(keyword in lower_segment for keyword in keywords):
+                    category_name = mapped_category
+                    break
+
+            if not category_name:
+                continue
+
+            description = re.sub(r'\d+(?:\.\d{1,2})?', '', segment, count=1)
+            description = ' '.join(description.split()).strip(' -:')
+            description = description or segment.strip()
+
+            results.append(
+                {
+                    'amount': amount,
+                    'category_name': category_name,
+                    'description': description,
+                }
+            )
+
+        return results or None
 
     def _safe_json_parse(self, text: str) -> dict:
         payload = (text or '').strip()

@@ -215,6 +215,43 @@ def process_user_message(user, text):
     if not result:
         return get_help_message()
 
+    if isinstance(result, list):
+        created_expenses = []
+        for item in result:
+            expense = Expense.objects.create(
+                user=user,
+                category=item['category'],
+                amount=item['amount'],
+                description=item['description'],
+                date=item['date'],
+                source='whatsapp',
+            )
+            created_expenses.append(expense)
+
+        if not created_expenses:
+            return get_help_message()
+
+        if len(created_expenses) == 1:
+            expense = created_expenses[0]
+            return (
+                f'✅ Recorded: {user.currency_symbol}{expense.amount} '
+                f'under {expense.category.icon} {expense.category.name}'
+            )
+
+        lines = []
+        total = 0
+        for expense in created_expenses:
+            total += float(expense.amount)
+            lines.append(
+                f"• {user.currency_symbol}{expense.amount} - {expense.category.icon} {expense.category.name} ({expense.description})"
+            )
+
+        return (
+            f"✅ Recorded {len(created_expenses)} expenses:\n"
+            + "\n".join(lines)
+            + f"\n\n💰 Total: {user.currency_symbol}{total:.2f}"
+        )
+
     if 'error' in result:
         if result.get('error') == 'category_not_found':
             category_names = list(
