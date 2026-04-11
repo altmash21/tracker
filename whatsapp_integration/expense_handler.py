@@ -65,11 +65,14 @@ class ExpenseParser:
                 ).first()
 
                 if not category and category_name.lower() == 'fuel':
-                    category = Category.objects.filter(
-                        user=self.user,
-                        name__iregex=r'^(transport|travel|fuel)$',
-                        is_active=True
-                    ).first()
+                    for fallback_name in ('Fuel', 'Transport', 'Travel'):
+                        category = Category.objects.filter(
+                            user=self.user,
+                            name__iexact=fallback_name,
+                            is_active=True
+                        ).first()
+                        if category:
+                            break
 
                 if not category:
                     category = Category.objects.filter(
@@ -146,60 +149,95 @@ class ExpenseParser:
         if not message:
             return None
 
-        if not re.search(r'\band\b|,|&', message, re.IGNORECASE):
-            return None
-
-        parts = [
-            part.strip()
-            for part in re.split(r'\s*(?:,|&|\band\b)\s*', message, flags=re.IGNORECASE)
-            if part.strip()
-        ]
-
-        if len(parts) < 2:
-            return None
-
-        keyword_map = {
+        filler_words = {'ka', 'ke', 'ki', 'for', 'and', 'with', 'on', 'at', 'to'}
+        keywords = {
+            'Food': ['food', 'burger', 'pizza', 'chicken', 'zomato', 'swiggy'],
             'Fuel': ['petrol', 'fuel', 'diesel'],
-            'Food': ['food', 'burger', 'pizza', 'zomato', 'swiggy'],
-            'Travel': ['uber', 'auto', 'taxi', 'bus'],
-            'Shopping': ['amazon', 'flipkart', 'shopping'],
+            'Travel': ['uber', 'auto', 'taxi', 'bus', 'train'],
+            'Shopping': ['amazon', 'flipkart', 'shopping', 'clothes'],
         }
 
+        keyword_to_category = {}
+        for category_name, category_keywords in keywords.items():
+            for keyword in category_keywords:
+                keyword_to_category[keyword] = category_name
+
+        normalized_message = message.lower()
+        punctuation_map = str.maketrans({
+            ',': ' ',
+            '&': ' ',
+            ';': ' ',
+            ':': ' ',
+            '/': ' ',
+            '|': ' ',
+        })
+        normalized_message = normalized_message.translate(punctuation_map)
+
+        tokens = [
+            token.strip()
+            for token in normalized_message.split()
+            if token.strip() and token.strip() not in filler_words
+        ]
+
+        if not tokens:
+            return None
+
+        def is_number_token(token: str) -> bool:
+            if token.count('.') > 1:
+                return False
+            numeric = token.replace('.', '', 1)
+            return numeric.isdigit()
+
+        important_tokens = [
+            token for token in tokens
+            if is_number_token(token) or token in keyword_to_category
+        ]
+
+        if not important_tokens:
+            return None
+
         results = []
-        for segment in parts:
-            amount_match = re.search(r'\d+(?:\.\d{1,2})?', segment)
-            if not amount_match:
+        i = 0
+        while i < len(important_tokens):
+            token = important_tokens[i]
+            if not is_number_token(token):
+                i += 1
                 continue
 
             try:
-                amount = Decimal(amount_match.group(0))
+                amount = Decimal(token)
             except Exception:
+                i += 1
                 continue
 
             if amount <= 0:
+                i += 1
                 continue
 
             category_name = None
-            lower_segment = segment.lower()
-            for mapped_category, keywords in keyword_map.items():
-                if any(keyword in lower_segment for keyword in keywords):
-                    category_name = mapped_category
+            description = None
+            j = i + 1
+            while j < len(important_tokens):
+                candidate = important_tokens[j]
+                if candidate in keyword_to_category:
+                    category_name = keyword_to_category[candidate]
+                    description = candidate
                     break
+                if is_number_token(candidate):
+                    break
+                j += 1
 
-            if not category_name:
-                continue
-
-            description = re.sub(r'\d+(?:\.\d{1,2})?', '', segment, count=1)
-            description = ' '.join(description.split()).strip(' -:')
-            description = description or segment.strip()
-
-            results.append(
-                {
-                    'amount': amount,
-                    'category_name': category_name,
-                    'description': description,
-                }
-            )
+            if category_name:
+                results.append(
+                    {
+                        'amount': amount,
+                        'category_name': category_name,
+                        'description': description or category_name.lower(),
+                    }
+                )
+                i = j + 1
+            else:
+                i += 1
 
         return results or None
 
