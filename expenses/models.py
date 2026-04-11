@@ -99,6 +99,36 @@ class Receipt(models.Model):
         return f"Receipt #{self.id} - {self.user.username}"
 
 
+class CategoryKeyword(models.Model):
+    """
+    Keyword mappings for categories to enable intelligent categorization.
+    Supports both system-provided (default) and user-defined keywords.
+    """
+    SOURCE_CHOICES = [
+        ('system', 'System'),
+        ('user', 'User'),
+    ]
+
+    category = models.ForeignKey(Category, on_delete=models.CASCADE, related_name='keywords')
+    keyword = models.CharField(max_length=100)
+    added_by = models.CharField(max_length=10, choices=SOURCE_CHOICES, default='system')
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = 'category_keywords'
+        verbose_name = 'Category Keyword'
+        verbose_name_plural = 'Category Keywords'
+        unique_together = ('category', 'keyword')
+        ordering = ['category__name', 'keyword']
+        indexes = [
+            models.Index(fields=['category', 'keyword']),
+            models.Index(fields=['keyword']),
+        ]
+
+    def __str__(self):
+        return f"{self.category.name} → {self.keyword} ({self.added_by})"
+
+
 class Budget(models.Model):
     """Monthly budget amount mapped to a user category."""
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='budgets')

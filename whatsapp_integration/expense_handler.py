@@ -1,9 +1,11 @@
 import re
+import json
 import logging
+from decimal import Decimal
 from datetime import datetime, timedelta
 from django.conf import settings
 from django.utils import timezone
-from expenses.models import Category, Expense
+from expenses.models import Category, CategoryKeyword, Expense
 from users.models import OTPVerification
 from users.services import generate_otp_for_user
 
@@ -11,11 +13,20 @@ logger = logging.getLogger(__name__)
 
 
 class ExpenseParser:
-    """Parse natural language expense messages from WhatsApp"""
+    """
+    Parse natural language expense messages from WhatsApp using a 3-tier
+    cascading category resolution system:
+    
+    Tier 1: Exact Match - Direct category name match (case-insensitive)
+    Tier 2: Keyword Map - Match against category keywords database
+    Tier 3: Gemini Fallback - Use Gemini 2.5 Flash-Lite to categorize,
+                              then auto-save the keyword
+    """
     
     def __init__(self, user):
         self.user = user
         self.currency_symbol = user.currency_symbol
+        self.gemini_key = settings.GEMINI_API_KEY if hasattr(settings, 'GEMINI_API_KEY') else None
     
     def parse(self, message):
         """
@@ -24,6 +35,9 @@ class ExpenseParser:
             - "120 petrol"
             - "450 groceries bought vegetables"
             - "200 food dinner at restaurant"
+        
+        Returns dict with keys: amount, category, description, date
+        Or error dict with keys: error, message
         """
         message = message.strip()
         
@@ -34,69 +48,202 @@ class ExpenseParser:
         if not match:
             return None
         
-        amount_str, category_name, description = match.groups()
-        amount = float(amount_str)
+        amount_str, category_word, description = match.groups()
+        amount = Decimal(amount_str)
         description = description or ""
         
-        # Find matching category (case-insensitive)
-        category = Category.objects.filter(
-            user=self.user,
-            name__iexact=category_name,
-            is_active=True
-        ).first()
-        
-        if not category:
-            # Try fuzzy matching with common categories
-            category = self._find_similar_category(category_name)
-        
-        if not category:
+        # ===== TIER 1: EXACT MATCH =====
+        category = self._tier1_exact_match(category_word)
+        if category:
+            logger.info(f"[Tier 1] Exact Match hit for '{category_word}' -> {category.name}")
             return {
-                'error': 'category_not_found',
-                'message': f"Category '{category_name}' not found. Available categories: {self._get_category_list()}"
+                'amount': amount,
+                'category': category,
+                'description': description.strip(),
+                'date': timezone.now().date()
             }
         
+        # ===== TIER 2: KEYWORD MAP =====
+        category = self._tier2_keyword_match(category_word)
+        if category:
+            logger.info(f"[Tier 2] Keyword Match hit for '{category_word}' -> {category.name}")
+            return {
+                'amount': amount,
+                'category': category,
+                'description': description.strip(),
+                'date': timezone.now().date()
+            }
+        
+        # ===== TIER 3: GEMINI FALLBACK =====
+        if self.gemini_key:
+            result = self._tier3_gemini_fallback(amount_str, category_word, description)
+            if result.get('category'):
+                logger.info(f"[Tier 3] Gemini hit for '{category_word}' -> {result['category'].name}")
+                return result
+            elif result.get('error'):
+                # Gemini failed, return error
+                return result
+        
+        # ===== ALL TIERS FAILED =====
         return {
-            'amount': amount,
-            'category': category,
-            'description': description.strip(),
-            'date': timezone.now().date()
+            'error': 'category_not_found',
+            'message': f"Category '{category_word}' not found. Available categories: {self._get_category_list()}"
         }
     
-    def _find_similar_category(self, category_name):
-        """Try to find similar category name"""
-        categories = Category.objects.filter(user=self.user, is_active=True)
+    def _tier1_exact_match(self, category_word):
+        """Tier 1: Check if the word exactly matches any category name (case-insensitive)"""
+        return Category.objects.filter(
+            user=self.user,
+            name__iexact=category_word,
+            is_active=True
+        ).first()
+    
+    def _tier2_keyword_match(self, category_word):
+        """Tier 2: Check if the word exists in the keyword map for this user's categories"""
+        keyword_entry = CategoryKeyword.objects.select_related('category').filter(
+            category__user=self.user,
+            category__is_active=True,
+            keyword__iexact=category_word
+        ).first()
         
-        # Common aliases
-        aliases = {
-            'food': ['eat', 'lunch', 'dinner', 'breakfast', 'snack', 'meal'],
-            'travel': ['transport', 'taxi', 'uber', 'bus', 'train', 'petrol', 'fuel'],
-            'shopping': ['shop', 'clothes', 'buy'],
-            'groceries': ['grocery', 'vegetables', 'fruits', 'market'],
-            'entertainment': ['movie', 'cinema', 'game', 'fun'],
-            'health': ['medical', 'doctor', 'medicine', 'hospital'],
-            'bills': ['electricity', 'water', 'internet', 'mobile'],
-        }
-        
-        category_name_lower = category_name.lower()
-        
-        for category in categories:
-            cat_name_lower = category.name.lower()
-            
-            # Exact match
-            if cat_name_lower == category_name_lower:
-                return category
-            
-            # Check aliases
-            if cat_name_lower in aliases:
-                if category_name_lower in aliases[cat_name_lower]:
-                    return category
+        if keyword_entry:
+            return keyword_entry.category
         
         return None
+    
+    def _tier3_gemini_fallback(self, amount_str, category_word, description):
+        """
+        Tier 3: Use Gemini 2.5 Flash-Lite to categorize the expense.
+        On success, AUTO-SAVE the keyword to prevent future Gemini calls.
+        """
+        try:
+            from google import genai
+        except ImportError:
+            logger.warning("google-genai not installed, skipping Gemini fallback")
+            return self._get_fallback_error()
+        
+        try:
+            # Get user's active categories for context
+            user_categories = list(
+                Category.objects.filter(user=self.user, is_active=True)
+                .values_list('name', flat=True)
+            )
+            
+            if not user_categories:
+                logger.warning(f"User {self.user.username} has no active categories")
+                return self._get_fallback_error()
+            
+            # Build Gemini prompt
+            categories_str = ', '.join(user_categories)
+            full_text = f"{amount_str} {category_word}" + (f" {description}" if description else "")
+            
+            prompt = f"""You are an expense categorization assistant. Parse the following expense text and return JSON.
+
+User's available categories: {categories_str}
+
+Expense text: "{full_text}"
+
+Return only valid JSON (no markdown, no code blocks) with these exact fields:
+{{
+    "amount": <number>,
+    "category": "<exact category from the list above>",
+    "description": "<short description>"
+}}
+
+If you cannot categorize or the category is not in the list, return:
+{{
+    "amount": 0,
+    "category": "Other",
+    "description": "Unable to categorize"
+}}"""
+            
+            # Call Gemini 2.5 Flash-Lite (fastest model)
+            client = genai.Client(api_key=self.gemini_key)
+            response = client.models.generate_content(
+                model="gemini-2.5-flash-lite",
+                contents=prompt,
+                generation_config={"temperature": 0.3}
+            )
+            
+            # Parse response
+            response_text = response.text.strip()
+            
+            # Remove markdown code blocks if present
+            if response_text.startswith('```'):
+                response_text = response_text.split('```')[1]
+                if response_text.startswith('json'):
+                    response_text = response_text[4:]
+            
+            parsed = json.loads(response_text)
+            
+            # Validate response structure
+            if not all(k in parsed for k in ['amount', 'category', 'description']):
+                logger.warning(f"Invalid Gemini response structure: {parsed}")
+                return self._get_fallback_error()
+            
+            # Find the category in user's categories
+            category = Category.objects.filter(
+                user=self.user,
+                name__iexact=parsed['category'],
+                is_active=True
+            ).first()
+            
+            if not category:
+                # Category not found in user's list, return error
+                logger.warning(f"Gemini returned unknown category: {parsed['category']}")
+                return self._get_fallback_error()
+            
+            # SUCCESS! Auto-save the keyword for future use
+            try:
+                CategoryKeyword.objects.get_or_create(
+                    category=category,
+                    keyword=category_word.lower(),
+                    defaults={'added_by': 'system'}
+                )
+                logger.info(f"[AutoSave] Saved keyword '{category_word}' -> {category.name}")
+            except Exception as e:
+                logger.warning(f"Failed to auto-save keyword: {e}")
+            
+            return {
+                'amount': Decimal(str(parsed['amount'])),
+                'category': category,
+                'description': str(parsed['description']).strip(),
+                'date': timezone.now().date()
+            }
+        
+        except (json.JSONDecodeError, ValueError) as e:
+            logger.warning(f"Gemini response parse error: {e}")
+            return self._get_fallback_error()
+        
+        except Exception as e:
+            # Handle API errors (429, RESOURCE_EXHAUSTED, etc.)
+            error_str = str(e).lower()
+            
+            if '429' in str(e) or 'resource_exhausted' in error_str or 'quota' in error_str:
+                logger.warning(f"Gemini quota exhausted: {e}")
+                return {
+                    'error': 'gemini_quota_exceeded',
+                    'message': f"AI is temporarily unavailable. Please try later or use one of these categories: {self._get_category_list()}"
+                }
+            
+            logger.error(f"Gemini API error: {e}", exc_info=True)
+            return {
+                'error': 'gemini_error',
+                'message': f"Unable to categorize. Available categories: {self._get_category_list()}"
+            }
+    
+    def _get_fallback_error(self):
+        """Return a user-friendly error when all tiers fail"""
+        return {
+            'error': 'categorization_failed',
+            'message': f"Unable to categorize. Available categories: {self._get_category_list()}"
+        }
     
     def _get_category_list(self):
         """Get formatted list of available categories"""
         categories = Category.objects.filter(user=self.user, is_active=True)
         return ', '.join([f"{cat.icon} {cat.name}" for cat in categories])
+
 
 
 class StatementGenerator:

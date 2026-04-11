@@ -18,11 +18,18 @@ from django.contrib import admin
 from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
+from rest_framework.routers import DefaultRouter
 from dashboard import views as dashboard_views
 from whatsapp_integration import views as whatsapp_views
+from expenses.serializers_keywords import CategoryKeywordViewSet
+
+# DRF Router for API endpoints
+api_router = DefaultRouter()
+api_router.register(r'category-keywords', CategoryKeywordViewSet, basename='category-keywords')
 
 urlpatterns = [
     path('admin/', admin.site.urls),
+    path('api/', include(api_router.urls)),
     path('whatsapp/', include('whatsapp_integration.urls')),
     path('verify-otp/', dashboard_views.verify_otp_login, name='verify_otp'),
     # Removed duplicate route - using whatsapp/webhook/ only
@@ -33,4 +40,5 @@ urlpatterns = [
 if settings.DEBUG:
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
     urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
+
 

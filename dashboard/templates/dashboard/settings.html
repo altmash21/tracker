@@ -26,6 +26,10 @@
         <span class="material-symbols-outlined">chat</span>
         <span class="text-sm font-medium">WhatsApp Sync</span>
       </a>
+      <a href="?section=keywords" class="flex items-center gap-3 {% if settings_section == 'keywords' %}text-emerald-700 font-bold bg-white rounded-xl shadow-sm{% else %}text-slate-600 hover:bg-slate-200/50 rounded-xl{% endif %} px-4 py-3 transition-all">
+        <span class="material-symbols-outlined">label</span>
+        <span class="text-sm font-medium">Manage Keywords</span>
+      </a>
       <a href="?section=preferences" class="flex items-center gap-3 {% if settings_section == 'preferences' %}text-emerald-700 font-bold bg-white rounded-xl shadow-sm{% else %}text-slate-600 hover:bg-slate-200/50 rounded-xl{% endif %} px-4 py-3 transition-all">
         <span class="material-symbols-outlined">tune</span>
         <span class="text-sm font-medium">Preferences</span>
@@ -92,6 +96,28 @@
       </form>
     </section>
 
+    <!-- Manage Keywords Section -->
+    <section class="bg-surface-container-lowest p-8 rounded-xl border border-outline-variant/15 editorial-shadow">
+      <div class="flex items-center justify-between mb-6">
+        <div>
+          <h3 class="font-headline text-xl font-bold">Manage Keywords</h3>
+          <p class="text-sm text-on-surface-variant mt-1">Add custom keywords for smarter category detection in WhatsApp messages.</p>
+        </div>
+        <button id="refresh-keywords-btn" class="text-slate-500 hover:text-emerald-600 transition-colors p-2" title="Refresh keywords">
+          <span class="material-symbols-outlined">refresh</span>
+        </button>
+      </div>
+
+      <!-- Keywords Container -->
+      <div id="keywords-container" class="space-y-6">
+        <!-- Will be populated by JavaScript -->
+        <div class="text-center py-8 text-slate-400">
+          <span class="material-symbols-outlined text-4xl">pending</span>
+          <p class="mt-2 text-sm">Loading keywords...</p>
+        </div>
+      </div>
+    </section>
+
     <!-- Preferences Section -->
     <section class="bg-surface-container-lowest p-8 rounded-xl border border-outline-variant/15 editorial-shadow">
       <h3 class="font-headline text-xl font-bold mb-6">Preferences</h3>
@@ -136,4 +162,190 @@
   </div>
 
 </div>
+
+{% block extra_scripts %}
+<script>
+  // Keywords Management UI
+  const KEYWORDS_API = '/api/category-keywords/';
+
+  // Load and render keywords on page load
+  document.addEventListener('DOMContentLoaded', function() {
+    loadKeywords();
+    
+    // Refresh button handler
+    document.getElementById('refresh-keywords-btn').addEventListener('click', loadKeywords);
+  });
+
+  async function loadKeywords() {
+    try {
+      const response = await fetch(KEYWORDS_API + 'grouped/', {
+        headers: {
+          'X-CSRFToken': getCookie('csrftoken'),
+          'Accept': 'application/json'
+        }
+      });
+
+      if (!response.ok) throw new Error('Failed to load keywords');
+
+      const categories = await response.json();
+      renderKeywords(categories);
+
+    } catch (error) {
+      console.error('Error loading keywords:', error);
+      showError('Failed to load keywords. Please try again.');
+    }
+  }
+
+  function renderKeywords(categories) {
+    const container = document.getElementById('keywords-container');
+    
+    if (!categories || categories.length === 0) {
+      container.innerHTML = `
+        <div class="text-center py-8 text-slate-400">
+          <span class="material-symbols-outlined text-4xl">category</span>
+          <p class="mt-2 text-sm">No categories found. Create one in your dashboard!</p>
+        </div>
+      `;
+      return;
+    }
+
+    container.innerHTML = categories.map(category => `
+      <div class="border border-outline-variant/15 rounded-xl p-6" data-category-id="${category.id}">
+        <div class="flex items-center justify-between mb-4">
+          <div class="flex items-center gap-3">
+            <span class="text-3xl">${category.icon}</span>
+            <div>
+              <h4 class="font-headline font-bold">${category.name}</h4>
+              <p class="text-xs text-on-surface-variant">${category.keywords.length} keywords</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Keywords List -->
+        <div class="mb-4">
+          ${category.keywords.length > 0 ? `
+            <div class="flex flex-wrap gap-2 mb-4">
+              ${category.keywords.map(kw => `
+                <div class="inline-flex items-center gap-2 px-3 py-1 bg-emerald-50 border border-emerald-200 rounded-full text-sm" data-keyword-id="${kw.id}">
+                  <span class="font-medium text-emerald-800">${kw.keyword}</span>
+                  ${kw.added_by === 'user' ? `
+                    <button type="button" onclick="deleteKeyword(${kw.id})" class="text-emerald-600 hover:text-red-600 transition-colors p-0.5" title="Delete">
+                      <span class="material-symbols-outlined text-sm">close</span>
+                    </button>
+                  ` : `
+                    <span class="text-xs px-2 py-0.5 bg-emerald-100 text-emerald-700 rounded-full font-medium">System</span>
+                  `}
+                </div>
+              `).join('')}
+            </div>
+          ` : `
+            <p class="text-sm text-slate-500 italic mb-4">No keywords yet. Add one below!</p>
+          `}
+        </div>
+
+        <!-- Add New Keyword Form -->
+        <form class="flex gap-2" onsubmit="addKeyword(event, ${category.id})">
+          <input 
+            type="text" 
+            placeholder="Add keyword..." 
+            class="flex-1 px-3 py-2 text-sm bg-surface-container-low rounded-lg border-none focus:ring-2 focus:ring-emerald-400"
+            required
+          />
+          <button type="submit" class="px-4 py-2 bg-emerald-500 text-white text-sm font-bold rounded-lg hover:bg-emerald-600 transition-colors">
+            <span class="material-symbols-outlined text-sm">add</span>
+          </button>
+        </form>
+      </div>
+    `).join('');
+  }
+
+  async function addKeyword(event, categoryId) {
+    event.preventDefault();
+    
+    const form = event.target;
+    const input = form.querySelector('input');
+    const keyword = input.value.trim().toLowerCase();
+
+    if (!keyword) return;
+
+    try {
+      const response = await fetch(KEYWORDS_API, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRFToken': getCookie('csrftoken'),
+          'Accept': 'application/json'
+        },
+        body: JSON.stringify({
+          category: categoryId,
+          keyword: keyword
+        })
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.detail || error.non_field_errors?.[0] || 'Failed to add keyword');
+      }
+
+      input.value = '';
+      loadKeywords();
+      showSuccess(`Keyword "${keyword}" added successfully!`);
+
+    } catch (error) {
+      console.error('Error adding keyword:', error);
+      showError(error.message || 'Failed to add keyword.');
+    }
+  }
+
+  async function deleteKeyword(keywordId) {
+    if (!confirm('Delete this keyword?')) return;
+
+    try {
+      const response = await fetch(KEYWORDS_API + keywordId + '/', {
+        method: 'DELETE',
+        headers: {
+          'X-CSRFToken': getCookie('csrftoken')
+        }
+      });
+
+      if (!response.ok) throw new Error('Failed to delete keyword');
+
+      loadKeywords();
+      showSuccess('Keyword deleted successfully!');
+
+    } catch (error) {
+      console.error('Error deleting keyword:', error);
+      showError('Failed to delete keyword.');
+    }
+  }
+
+  function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+      const cookies = document.cookie.split(';');
+      for (let i = 0; i < cookies.length; i++) {
+        const cookie = cookies[i].trim();
+        if (cookie.substring(0, name.length + 1) === (name + '=')) {
+          cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+          break;
+        }
+      }
+    }
+    return cookieValue;
+  }
+
+  function showSuccess(message) {
+    // If you have a toast notification system, use it
+    // Otherwise, use a simple alert
+    console.log('✓', message);
+  }
+
+  function showError(message) {
+    console.error('✗', message);
+    // If you have a toast notification system, use it
+    // Otherwise, use a simple alert
+    alert('Error: ' + message);
+  }
+</script>
+{% endblock %}
 {% endblock %}

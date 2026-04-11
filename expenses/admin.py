@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Budget, Category, Expense, Receipt
+from .models import Budget, Category, CategoryKeyword, Expense, Receipt
 
 
 @admin.register(Category)
@@ -37,4 +37,13 @@ class BudgetAdmin(admin.ModelAdmin):
     list_filter = ('is_active', 'category')
     search_fields = ('user__username', 'category__name')
     readonly_fields = ('created_at', 'updated_at')
+
+
+@admin.register(CategoryKeyword)
+class CategoryKeywordAdmin(admin.ModelAdmin):
+    list_display = ('category', 'keyword', 'added_by', 'created_at')
+    list_filter = ('added_by', 'category', 'created_at')
+    search_fields = ('keyword', 'category__name')
+    readonly_fields = ('created_at',)
+
 
