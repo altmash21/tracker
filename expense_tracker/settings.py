@@ -145,6 +145,9 @@ WHATSAPP_VERIFY_TOKEN = config('WHATSAPP_VERIFY_TOKEN', default='change-this-ver
 # Webhook Security
 WEBHOOK_SECRET = config('WEBHOOK_SECRET', default='change-this-webhook-secret-key')
 
+# Gemini API Configuration
+GEMINI_API_KEY = config('GEMINI_API_KEY', default='')
+
 # REST Framework Configuration
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [
