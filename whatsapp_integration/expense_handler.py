@@ -149,7 +149,10 @@ class ExpenseParser:
         if not message:
             return None
 
-        filler_words = {'ka', 'ke', 'ki', 'for', 'and', 'with', 'on', 'at', 'to'}
+        filler_words = {
+            'ka', 'ke', 'ki', 'for', 'and', 'with', 'on', 'at', 'to', 'a', 'an', 'the',
+            'of', 'in', 'my', 'is', 'was', 'am', 'are',
+        }
         keywords = {
             'Food': ['food', 'burger', 'pizza', 'chicken', 'zomato', 'swiggy'],
             'Fuel': ['petrol', 'fuel', 'diesel'],
@@ -162,6 +165,15 @@ class ExpenseParser:
             for keyword in category_keywords:
                 keyword_to_category[keyword] = category_name
 
+        learned_keyword_mappings = CategoryKeyword.objects.select_related('category').filter(
+            category__user=self.user,
+            category__is_active=True,
+        )
+        for mapping in learned_keyword_mappings:
+            kw = (mapping.keyword or '').strip().lower()
+            if kw and len(kw) >= 3 and kw not in filler_words:
+                keyword_to_category[kw] = mapping.category.name
+
         normalized_message = message.lower()
         punctuation_map = str.maketrans({
             ',': ' ',
@@ -170,6 +182,9 @@ class ExpenseParser:
             ':': ' ',
             '/': ' ',
             '|': ' ',
+            '(': ' ',
+            ')': ' ',
+            '.': ' ',
         })
         normalized_message = normalized_message.translate(punctuation_map)
 
@@ -240,6 +255,41 @@ class ExpenseParser:
                 i += 1
 
         return results or None
+
+    def _extract_learning_keywords(self, message: str, description: str):
+        filler_words = {
+            'ka', 'ke', 'ki', 'for', 'and', 'with', 'on', 'at', 'to', 'a', 'an', 'the',
+            'of', 'in', 'my', 'is', 'was', 'am', 'are', 'other', 'unable', 'parse',
+        }
+        text = f"{message or ''} {description or ''}".lower()
+        raw_tokens = re.findall(r'[a-zA-Z]+', text)
+
+        keywords = set()
+        for token in raw_tokens:
+            token = token.strip().lower()
+            if len(token) < 3:
+                continue
+            if token in filler_words:
+                continue
+            if token.isdigit():
+                continue
+            keywords.add(token)
+
+        return keywords
+
+    def _learn_from_ai_result(self, message: str, description: str, category):
+        if not category:
+            return
+
+        try:
+            for keyword in self._extract_learning_keywords(message, description):
+                CategoryKeyword.objects.get_or_create(
+                    category=category,
+                    keyword=keyword,
+                    defaults={'added_by': 'system'},
+                )
+        except Exception as e:
+            logger.warning('Keyword learning failed: %s', e)
 
     def _safe_json_parse(self, text: str) -> dict:
         payload = (text or '').strip()
@@ -395,6 +445,8 @@ Rules:
                     'error': 'category_not_found',
                     'message': f"Category not found. Available categories: {self._get_category_list()}"
                 }
+
+            self._learn_from_ai_result(message, description, category)
 
             return {
                 'amount': amount,
@@ -563,20 +615,18 @@ Rules:
                 return self._get_fallback_error()
             
             # SUCCESS! Auto-save the keyword for future use
-            try:
-                CategoryKeyword.objects.get_or_create(
-                    category=category,
-                    keyword=category_word.lower(),
-                    defaults={'added_by': 'system'}
-                )
-                logger.info(f"[AutoSave] Saved keyword '{category_word}' -> {category.name}")
-            except Exception as e:
-                logger.warning(f"Failed to auto-save keyword: {e}")
-            
+            parsed_description = str(parsed['description']).strip()
+            self._learn_from_ai_result(
+                f"{amount_str} {category_word} {description}".strip(),
+                parsed_description,
+                category,
+            )
+            logger.info(f"[AutoSave] Learned keywords for category '{category.name}'")
+
             return {
                 'amount': Decimal(str(parsed['amount'])),
                 'category': category,
-                'description': str(parsed['description']).strip(),
+                'description': parsed_description,
                 'date': timezone.now().date()
             }
         
