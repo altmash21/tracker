@@ -1,7 +1,7 @@
 # XPENSEDIARY - WhatsApp-Integrated Expense Tracking System
 ## Complete Documentation & Setup Guide
 
-**Last Updated:** January 12, 2026
+**Last Updated:** April 10, 2026
 
 ---
 
@@ -29,6 +29,7 @@ A WhatsApp-first expense tracking system that allows users to record daily expen
 - Frontend: HTML, CSS, JavaScript
 - Database: SQLite (development) / PostgreSQL (production)
 - Integration: WhatsApp Business Cloud API (Meta)
+- AI/OCR: Google Cloud Vision OCR + Google Gemini AI
 - Deployment: Nginx + Gunicorn on Ubuntu VPS
 
 ---
@@ -41,6 +42,13 @@ A WhatsApp-first expense tracking system that allows users to record daily expen
 - ✅ Category-wise expense summaries
 - ✅ Natural language parsing for easy entry
 - ✅ Real-time confirmation messages
+- ✅ AI-assisted receipt categorization with Gemini
+- ✅ Keyword-based fallback when Gemini is unavailable
+
+### Receipt OCR & AI
+- ✅ Google Vision OCR for receipt image text extraction
+- ✅ Gemini text/image categorization for structured expense data
+- ✅ Offline keyword fallback for text categorization when AI is unavailable
 
 ### Web Dashboard
 - 📊 Interactive analytics and charts
@@ -99,6 +107,10 @@ WHATSAPP_ACCESS_TOKEN=your_access_token
 WHATSAPP_VERIFY_TOKEN=your_verify_token
 WEBHOOK_SECRET=your_meta_app_secret
 
+# Google AI / OCR
+GOOGLE_APPLICATION_CREDENTIALS=path/to/google-service-account.json
+GEMINI_API_KEY=your_gemini_api_key
+
 # Database (SQLite for development)
 DB_ENGINE=django.db.backends.sqlite3
 DB_NAME=db.sqlite3
@@ -126,6 +138,55 @@ Open browser: **http://127.0.0.1:8000**
 3. Enter your WhatsApp number
 4. Verify OTP sent via WhatsApp
 5. Start sending expenses!
+
+---
+
+## AI & OCR Setup
+
+The project supports two AI-related services:
+
+- Google Vision OCR for extracting text from receipt images
+- Gemini AI for categorizing expense text and images into amount, category, and description
+
+### Google Vision Setup
+
+1. Create a Google Cloud project.
+2. Enable the **Vision API**.
+3. Create a **service account** and download the JSON key file.
+4. Set `GOOGLE_APPLICATION_CREDENTIALS` in `.env` to the JSON file path.
+5. Make sure the file exists on disk before starting Django.
+
+Example:
+```env
+GOOGLE_APPLICATION_CREDENTIALS=D:/expense tracking system/keys/vision-service-account.json
+```
+
+### Gemini Setup
+
+1. Create an API key from Google AI Studio.
+2. Set `GEMINI_API_KEY` in `.env`.
+3. Install dependencies from `requirements.txt`.
+
+Example:
+```env
+GEMINI_API_KEY=your_gemini_api_key
+```
+
+### AI Behavior
+
+- If `GEMINI_API_KEY` is missing, the app falls back to a local keyword-based parser for text expenses.
+- If Gemini returns a quota error (`429` / `RESOURCE_EXHAUSTED`), the app also falls back to keyword parsing for text expenses.
+- For image categorization, if Gemini quota is exceeded, the app returns a safe fallback response with `amount=0.0`, `category=Other`, and `description=Image receipt`.
+
+### Test Commands
+
+```powershell
+# Gemini text/image categorization test
+python test_gemini_api.py
+
+# Vision client/authentication check
+& ".venv/Scripts/python.exe" -c "from google.cloud import vision; vision.ImageAnnotatorClient(); print('Vision client init: OK')"
+```
 
 ---
 
@@ -842,6 +903,12 @@ POST /whatsapp/test/     - Test routing (debug)
 - [x] Real-time message responses
 - [x] Error handling and validation
 
+#### AI / OCR Integration
+- [x] Google Vision OCR service for receipt text extraction
+- [x] Gemini-based text categorization
+- [x] Gemini-based image categorization
+- [x] Keyword fallback when Gemini is unavailable or rate-limited
+
 #### Deployment
 - [x] VPS deployment with Nginx + Gunicorn
 - [x] SSL/HTTPS configuration
@@ -863,6 +930,8 @@ POST /whatsapp/test/     - Test routing (debug)
 
 1. **Signature Verification:** Temporarily disabled - needs to be re-enabled with proper `WEBHOOK_SECRET` after testing
 2. **WhatsApp Test Mode:** Limited to whitelisted phone numbers until app is approved by Meta
+3. **Google Vision Credentials:** `GOOGLE_APPLICATION_CREDENTIALS` must point to a valid service-account JSON file
+4. **Gemini Quota Limits:** Gemini may fall back to keyword parsing when free-tier quotas are exhausted
 
 ### 📋 Future Enhancements
 
@@ -872,7 +941,7 @@ POST /whatsapp/test/     - Test routing (debug)
 - [ ] Export to CSV/Excel
 - [ ] Mobile app (React Native)
 - [ ] Voice message expense entry
-- [ ] Receipt image parsing with OCR
+- [ ] Deeper receipt image parsing workflow in WhatsApp conversation flow
 - [ ] Shared expense groups
 - [ ] Monthly budget planning
 - [ ] Expense categories with subcategories

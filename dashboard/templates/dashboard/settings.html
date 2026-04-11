@@ -1,0 +1,139 @@
+{% extends "dashboard/base2.html" %}
+{% block title %}XPENSEDIARY | Settings{% endblock %}
+{% block search_placeholder %}Search settings...{% endblock %}
+
+{% block content %}
+{# Pass active_page='settings' from view #}
+
+<div class="flex flex-col md:flex-row gap-8">
+
+  <!-- Settings Sidebar -->
+  <aside class="w-full md:w-72 shrink-0">
+    <div class="p-4 mb-4">
+      <h2 class="font-headline text-2xl font-extrabold text-on-surface tracking-tight">Settings</h2>
+      <p class="text-on-surface-variant text-sm mt-1">Manage your financial atelier</p>
+    </div>
+    <nav class="space-y-1">
+      <a href="?section=profile" class="flex items-center gap-3 {% if settings_section == 'profile' %}text-emerald-700 font-bold bg-white rounded-xl shadow-sm{% else %}text-slate-600 hover:bg-slate-200/50 rounded-xl{% endif %} px-4 py-3 transition-all">
+        <span class="material-symbols-outlined">person</span>
+        <span class="text-sm font-medium">Profile Management</span>
+      </a>
+      <a href="?section=security" class="flex items-center gap-3 {% if settings_section == 'security' %}text-emerald-700 font-bold bg-white rounded-xl shadow-sm{% else %}text-slate-600 hover:bg-slate-200/50 rounded-xl{% endif %} px-4 py-3 transition-all">
+        <span class="material-symbols-outlined">security</span>
+        <span class="text-sm font-medium">Security & Privacy</span>
+      </a>
+      <a href="?section=whatsapp" class="flex items-center gap-3 {% if settings_section == 'whatsapp' %}text-emerald-700 font-bold bg-white rounded-xl shadow-sm{% else %}text-slate-600 hover:bg-slate-200/50 rounded-xl{% endif %} px-4 py-3 transition-all">
+        <span class="material-symbols-outlined">chat</span>
+        <span class="text-sm font-medium">WhatsApp Sync</span>
+      </a>
+      <a href="?section=preferences" class="flex items-center gap-3 {% if settings_section == 'preferences' %}text-emerald-700 font-bold bg-white rounded-xl shadow-sm{% else %}text-slate-600 hover:bg-slate-200/50 rounded-xl{% endif %} px-4 py-3 transition-all">
+        <span class="material-symbols-outlined">tune</span>
+        <span class="text-sm font-medium">Preferences</span>
+      </a>
+      <a href="?section=notifications" class="flex items-center gap-3 {% if settings_section == 'notifications' %}text-emerald-700 font-bold bg-white rounded-xl shadow-sm{% else %}text-slate-600 hover:bg-slate-200/50 rounded-xl{% endif %} px-4 py-3 transition-all">
+        <span class="material-symbols-outlined">notifications_active</span>
+        <span class="text-sm font-medium">Notifications</span>
+      </a>
+    </nav>
+  </aside>
+
+  <!-- Settings Content Panel -->
+  <div class="flex-1 space-y-8">
+    {% block settings_panel %}
+
+    <!-- Profile Section (default visible) -->
+    <section class="bg-surface-container-lowest p-8 rounded-xl border border-outline-variant/15 editorial-shadow">
+      <h3 class="font-headline text-xl font-bold mb-6">Profile Management</h3>
+      <form method="post">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="profile"/>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div>
+            <label class="text-xs font-bold text-slate-500 uppercase tracking-widest mb-2 block">First Name</label>
+            <input name="first_name" type="text" value="{{ user.first_name }}" class="w-full px-4 py-3 bg-surface-container-low rounded-xl border-none focus:ring-2 focus:ring-primary text-sm font-medium"/>
+          </div>
+          <div>
+            <label class="text-xs font-bold text-slate-500 uppercase tracking-widest mb-2 block">Last Name</label>
+            <input name="last_name" type="text" value="{{ user.last_name }}" class="w-full px-4 py-3 bg-surface-container-low rounded-xl border-none focus:ring-2 focus:ring-primary text-sm font-medium"/>
+          </div>
+          <div>
+            <label class="text-xs font-bold text-slate-500 uppercase tracking-widest mb-2 block">Email</label>
+            <input name="email" type="email" value="{{ user.email }}" class="w-full px-4 py-3 bg-surface-container-low rounded-xl border-none focus:ring-2 focus:ring-primary text-sm font-medium"/>
+          </div>
+          <div>
+            <label class="text-xs font-bold text-slate-500 uppercase tracking-widest mb-2 block">Currency</label>
+            <select name="currency" class="w-full px-4 py-3 bg-surface-container-low rounded-xl border-none focus:ring-2 focus:ring-primary text-sm font-medium">
+              <option value="USD" {% if user.currency == 'USD' %}selected{% endif %}>USD — US Dollar</option>
+              <option value="INR" {% if user.currency == 'INR' %}selected{% endif %}>INR — Indian Rupee</option>
+              <option value="AED" {% if user.currency == 'AED' %}selected{% endif %}>AED — UAE Dirham</option>
+              <option value="EUR" {% if user.currency == 'EUR' %}selected{% endif %}>EUR — Euro</option>
+            </select>
+          </div>
+        </div>
+        <div class="mt-6 flex justify-end">
+          <button type="submit" class="custom-gradient text-white px-8 py-3 rounded-xl font-bold shadow-md active:scale-95 transition-transform">Save Changes</button>
+        </div>
+      </form>
+    </section>
+
+    <section class="bg-surface-container-lowest p-8 rounded-xl border border-outline-variant/15 editorial-shadow">
+      <h3 class="font-headline text-xl font-bold mb-6">WhatsApp Sync</h3>
+      <form method="post" class="grid grid-cols-1 md:grid-cols-2 gap-6 items-end">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="whatsapp"/>
+        <div>
+          <label class="text-xs font-bold text-slate-500 uppercase tracking-widest mb-2 block">WhatsApp Number</label>
+          <input name="whatsapp_number" type="text" value="{{ user.whatsapp_number }}" placeholder="919876543210" class="w-full px-4 py-3 bg-surface-container-low rounded-xl border-none focus:ring-2 focus:ring-primary text-sm font-medium"/>
+          <p class="text-xs text-slate-500 mt-2">Include country code without spaces.</p>
+        </div>
+        <div class="flex md:justify-end">
+          <button type="submit" class="custom-gradient text-white px-8 py-3 rounded-xl font-bold shadow-md active:scale-95 transition-transform">Update Number</button>
+        </div>
+      </form>
+    </section>
+
+    <!-- Preferences Section -->
+    <section class="bg-surface-container-lowest p-8 rounded-xl border border-outline-variant/15 editorial-shadow">
+      <h3 class="font-headline text-xl font-bold mb-6">Preferences</h3>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+        <div class="space-y-4">
+          <h4 class="text-xs font-black text-on-surface-variant uppercase tracking-widest">Weekly Digest</h4>
+          <div class="flex items-center gap-3">
+            <label class="relative inline-flex items-center cursor-pointer">
+              <input class="sr-only peer" type="checkbox" {% if user_prefs.weekly_digest %}checked{% endif %}/>
+              <div class="w-11 h-6 bg-slate-200 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-500"></div>
+            </label>
+            <span class="text-sm font-medium">Monday Morning</span>
+          </div>
+          <p class="text-xs text-on-surface-variant">Receive a curated digest of your spending.</p>
+        </div>
+        <div class="space-y-4">
+          <h4 class="text-xs font-black text-on-surface-variant uppercase tracking-widest">Data Privacy</h4>
+          <div class="flex items-center gap-3">
+            <label class="relative inline-flex items-center cursor-pointer">
+              <input class="sr-only peer" type="checkbox" {% if user_prefs.privacy_mask %}checked{% endif %}/>
+              <div class="w-11 h-6 bg-slate-200 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-500"></div>
+            </label>
+            <span class="text-sm font-medium">Privacy Masking</span>
+          </div>
+          <p class="text-xs text-on-surface-variant">Hide sensitive balances in public views.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Danger Zone -->
+    <div class="bg-tertiary-fixed-dim/10 rounded-full p-8 border border-tertiary/10">
+      <div class="flex flex-col md:flex-row md:items-center justify-between gap-6">
+        <div>
+          <h3 class="font-headline text-lg font-bold text-on-tertiary-container">Danger Zone</h3>
+          <p class="text-sm text-tertiary">Permanently delete your account and all financial records.</p>
+        </div>
+        <button class="px-8 py-3 bg-tertiary text-white rounded-xl text-sm font-bold hover:bg-on-tertiary-fixed-variant transition-colors">Delete Account</button>
+      </div>
+    </div>
+
+    {% endblock settings_panel %}
+  </div>
+
+</div>
+{% endblock %}

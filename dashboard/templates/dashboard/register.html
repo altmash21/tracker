@@ -1,44 +1,50 @@
-{% extends 'dashboard/base.html' %}
+{% extends 'dashboard/auth_base2.html' %}
 
 {% block title %}Register - XPENSEDIARY{% endblock %}
 
-{% block content %}
-<div class="card" style="max-width: 500px; margin: 50px auto;">
-    <h2 style="margin-bottom: 30px; text-align: center;">Create Account</h2>
+{% block auth_content %}
+<div>
+    <p class="text-xs uppercase tracking-[0.2em] text-emerald-700 font-bold mb-2">Welcome</p>
+    <h2 class="font-headline text-3xl font-extrabold tracking-tight mb-6">Create Account</h2>
     
-    <form method="post">
+    <form method="post" class="space-y-4">
         {% csrf_token %}
         
-        <div class="form-group">
-            <label for="username">Username *</label>
-            <input type="text" id="username" name="username" required>
+        <div>
+            <label for="username" class="text-xs font-bold uppercase tracking-widest text-slate-500 mb-2 block">Username *</label>
+            <input type="text" id="username" name="username" required
+                   class="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-medium focus:border-emerald-500 focus:ring-emerald-500">
         </div>
         
-        <div class="form-group">
-            <label for="email">Email *</label>
-            <input type="email" id="email" name="email" required>
+        <div>
+            <label for="email" class="text-xs font-bold uppercase tracking-widest text-slate-500 mb-2 block">Email *</label>
+            <input type="email" id="email" name="email" required
+                   class="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-medium focus:border-emerald-500 focus:ring-emerald-500">
         </div>
         
-        <div class="form-group">
-            <label for="whatsapp_number">WhatsApp Number (with country code)</label>
-            <input type="text" id="whatsapp_number" name="whatsapp_number" placeholder="+919876543210">
+        <div>
+            <label for="whatsapp_number" class="text-xs font-bold uppercase tracking-widest text-slate-500 mb-2 block">WhatsApp Number (with country code)</label>
+            <input type="text" id="whatsapp_number" name="whatsapp_number" placeholder="+919876543210"
+                   class="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-medium focus:border-emerald-500 focus:ring-emerald-500">
         </div>
         
-        <div class="form-group">
-            <label for="password">Password *</label>
-            <input type="password" id="password" name="password" required>
+        <div>
+            <label for="password" class="text-xs font-bold uppercase tracking-widest text-slate-500 mb-2 block">Password *</label>
+            <input type="password" id="password" name="password" required
+                   class="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-medium focus:border-emerald-500 focus:ring-emerald-500">
         </div>
         
-        <div class="form-group">
-            <label for="password2">Confirm Password *</label>
-            <input type="password" id="password2" name="password2" required>
+        <div>
+            <label for="password2" class="text-xs font-bold uppercase tracking-widest text-slate-500 mb-2 block">Confirm Password *</label>
+            <input type="password" id="password2" name="password2" required
+                   class="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-medium focus:border-emerald-500 focus:ring-emerald-500">
         </div>
         
-        <button type="submit" class="btn btn-primary" style="width: 100%;">Register</button>
+        <button type="submit" class="w-full custom-gradient text-white font-bold py-3 rounded-xl shadow-md hover:shadow-lg transition-all">Register</button>
     </form>
     
-    <p class="text-center mt-20">
-        Already have an account? <a href="{% url 'dashboard:login' %}">Login here</a>
+    <p class="text-center mt-6 text-sm text-slate-600">
+        Already have an account? <a href="{% url 'dashboard:login' %}" class="font-bold text-emerald-700 hover:underline">Login here</a>
     </p>
 </div>
 {% endblock %}

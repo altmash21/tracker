@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{% block title %}XPENSEDIARY{% endblock %}</title>
+
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
+  <script src="https://cdn.tailwindcss.com?plugins=forms"></script>
+
+  <style>
+    body { font-family: Inter, sans-serif; }
+    .font-headline { font-family: Manrope, sans-serif; }
+    .custom-gradient { background: linear-gradient(135deg, #006c49 0%, #10b981 100%); }
+    .glass-card {
+      background: rgba(255, 255, 255, 0.9);
+      backdrop-filter: blur(8px);
+      box-shadow: 0 18px 40px rgba(15, 23, 42, 0.08);
+    }
+  </style>
+  {% block extra_head %}{% endblock %}
+</head>
+<body class="min-h-screen bg-gradient-to-br from-slate-50 via-emerald-50 to-cyan-50 text-slate-900">
+  <header class="w-full py-6 px-6 md:px-10 flex items-center justify-between">
+    <a href="{% url 'dashboard:home' %}" class="flex items-center gap-3">
+      <div class="w-10 h-10 rounded-xl custom-gradient text-white flex items-center justify-center">
+        <span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">account_balance_wallet</span>
+      </div>
+      <div>
+        <p class="font-headline font-extrabold tracking-tight text-emerald-700">XPENSEDIARY</p>
+        <p class="text-[10px] uppercase tracking-widest text-slate-500 font-semibold">TechSpark</p>
+      </div>
+    </a>
+    <a href="{% url 'dashboard:home' %}" class="text-sm font-semibold text-slate-600 hover:text-emerald-700">Back To Home</a>
+  </header>
+
+  <main class="px-4 pb-10">
+    <div class="max-w-md mx-auto">
+      {% if messages %}
+      <div class="mb-4 space-y-2">
+        {% for message in messages %}
+        <div class="rounded-xl px-4 py-3 text-sm font-semibold {% if message.tags == 'success' %}bg-emerald-100 text-emerald-800{% elif message.tags == 'error' %}bg-rose-100 text-rose-800{% elif message.tags == 'warning' %}bg-amber-100 text-amber-800{% else %}bg-slate-100 text-slate-700{% endif %}">
+          {{ message }}
+        </div>
+        {% endfor %}
+      </div>
+      {% endif %}
+
+      <section class="glass-card rounded-3xl border border-white/70 p-7 md:p-9">
+        {% block auth_content %}{% endblock %}
+      </section>
+    </div>
+  </main>
+</body>
+</html>

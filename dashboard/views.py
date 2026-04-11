@@ -1,20 +1,25 @@
 import hashlib
 import logging
 import os
+import csv
 from datetime import timedelta
+from decimal import Decimal
 
 from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth import login, logout
 from django.contrib.auth.decorators import login_required
 from django.core.cache import cache
-from django.db.models import Sum
+from django.core.paginator import Paginator
+from django.db.models import Count, Sum
+from django.db.models.functions import TruncMonth
 from django.http import JsonResponse
+from django.http import HttpResponse
 from django.shortcuts import redirect, render
 from django.utils import timezone
 from django.views.decorators.http import require_POST
 
-from expenses.models import Category, Expense, Receipt
+from expenses.models import Budget, Category, Expense, Receipt
 from users.models import OTPVerification, User, WhatsAppMapping
 from users.services import generate_otp_for_user, normalize_whatsapp_number, verify_otp_for_user
 from whatsapp_integration.exceptions import AICategoriaztionException, AmountNotFoundException, OCRException
@@ -296,10 +301,123 @@ def dashboard(request):
 
     top_category = category_data[0] if category_data else None
     
+    stats_cards = [
+        {
+            'label': 'Today',
+            'value': f"{user.currency_symbol}{today_total:,.0f}",
+            'trend_text': 'Live',
+            'trend_icon': 'schedule',
+            'trend_color': 'text-slate-500',
+        },
+        {
+            'label': 'This Week',
+            'value': f"{user.currency_symbol}{week_total:,.0f}",
+            'trend_text': 'Current week',
+            'trend_icon': 'calendar_view_week',
+            'trend_color': 'text-slate-500',
+        },
+        {
+            'label': 'This Month',
+            'value': f"{user.currency_symbol}{month_total:,.0f}",
+            'trend_text': 'Total spend',
+            'trend_icon': 'insights',
+            'trend_color': 'text-slate-500',
+        },
+        {
+            'label': 'Receipts',
+            'value': str(receipt_total),
+            'trend_text': f"{receipt_success} processed",
+            'trend_icon': 'receipt_long',
+            'trend_color': 'text-emerald-600',
+        },
+        {
+            'label': 'Categories',
+            'value': str(len(category_data)),
+            'trend_text': top_category['category__name'] if top_category else 'No data',
+            'trend_icon': 'category',
+            'trend_color': 'text-slate-500',
+        },
+    ]
+
+    recent_transactions = []
+    icon_map = {
+        'Food': 'restaurant',
+        'Travel': 'directions_car',
+        'Transport': 'directions_car',
+        'Bills': 'receipt_long',
+        'Shopping': 'shopping_bag',
+        'Entertainment': 'movie',
+        'Health': 'health_and_safety',
+        'Groceries': 'local_grocery_store',
+        'Education': 'school',
+    }
+    for expense in recent_expenses[:8]:
+        category_name = expense.category.name if expense.category else 'Other'
+        recent_transactions.append({
+            'merchant': expense.description or category_name,
+            'category': category_name,
+            'date': expense.date.strftime('%d %b %Y'),
+            'amount': f"{float(expense.amount):,.2f}",
+            'icon': icon_map.get(category_name, 'payments'),
+        })
+
+    budget_map = {
+        b.category_id: float(b.monthly_limit)
+        for b in Budget.objects.filter(user=user, is_active=True).select_related('category')
+    }
+    color_cycle = ['emerald-500', 'cyan-500', 'amber-500', 'rose-500', 'indigo-500']
+    category_breakdown = []
+    for idx, item in enumerate(category_data[:6]):
+        category_name = item.get('category__name') or 'Other'
+        spent = float(item.get('total') or 0)
+        limit = budget_map.get(
+            next((c.id for c in Category.objects.filter(user=user, name=category_name)[:1]), None),
+            max(spent * 1.2, spent),
+        )
+        percent = round((spent / limit) * 100, 1) if limit else 0
+        category_breakdown.append({
+            'name': category_name,
+            'spent': f"{spent:,.0f}",
+            'limit': f"{limit:,.0f}",
+            'percent': min(percent, 100),
+            'color': color_cycle[idx % len(color_cycle)],
+        })
+
+    receipt_statuses = []
+    status_meta = {
+        'success': ('Processed', 'check_circle', 'emerald-500', 'emerald-600', True),
+        'failed': ('Failed', 'error', 'rose-500', 'rose-600', True),
+        'pending': ('Pending', 'schedule', 'amber-500', 'amber-600', False),
+    }
+    for receipt in recent_receipts:
+        status_text, icon, status_color, icon_color, fill = status_meta.get(
+            receipt.processing_status,
+            ('Unknown', 'help', 'slate-400', 'slate-500', False),
+        )
+        receipt_statuses.append({
+            'filename': os.path.basename(receipt.image.name),
+            'status_text': status_text,
+            'status_color': status_color,
+            'icon': icon,
+            'icon_color': icon_color,
+            'fill': fill,
+        })
+
+    month_total_decimal = Decimal(str(month_total))
+    month_whole = int(month_total_decimal)
+    month_cents = int((month_total_decimal - month_whole) * 100)
+
     context = {
         'today_total': today_total,
         'week_total': week_total,
         'month_total': month_total,
+        'monthly_total': month_whole,
+        'monthly_total_cents': f"{month_cents:02d}",
+        'last_updated': timezone.now().strftime('%I:%M %p'),
+        'stats_cards': stats_cards,
+        'recent_transactions': recent_transactions,
+        'category_breakdown': category_breakdown,
+        'receipt_statuses': receipt_statuses,
         'category_data': category_data,
         'recent_expenses': recent_expenses,
         'recent_receipts': recent_receipts,
@@ -309,9 +427,417 @@ def dashboard(request):
         'receipt_pending': receipt_pending,
         'top_category': top_category,
         'whatsapp_verified': user.whatsapp_verified,
+        'active_page': 'dashboard',
     }
     
     return render(request, 'dashboard/dashboard.html', context)
+
+
+@login_required
+def analytics(request):
+    """Analytics page with trends and category summaries."""
+    user = request.user
+    today = timezone.now().date()
+    month_start = today.replace(day=1)
+
+    month_expenses = Expense.objects.filter(user=user, date__gte=month_start, is_deleted=False)
+    month_total = month_expenses.aggregate(total=Sum('amount'))['total'] or 0
+
+    category_data = list(
+        month_expenses
+        .values('category__name', 'category__icon', 'category__color')
+        .annotate(total=Sum('amount'))
+        .order_by('-total')
+    )
+
+    for item in category_data:
+        item['percentage'] = 0
+        if month_total:
+            item['percentage'] = round((float(item['total']) / float(month_total)) * 100, 1)
+
+    trend_qs = (
+        Expense.objects.filter(user=user, is_deleted=False)
+        .annotate(month=TruncMonth('date'))
+        .values('month')
+        .annotate(total=Sum('amount'), count=Count('id'))
+        .order_by('-month')[:6]
+    )
+
+    monthly_trend = []
+    for row in reversed(list(trend_qs)):
+        month_value = row.get('month')
+        monthly_trend.append({
+            'label': month_value.strftime('%b %Y') if month_value else 'Unknown',
+            'total': float(row.get('total') or 0),
+            'count': row.get('count') or 0,
+        })
+
+    chart_bars = []
+    max_total = max([point['total'] for point in monthly_trend], default=0) or 1
+    bar_palette = ['bg-emerald-500', 'bg-cyan-500', 'bg-indigo-500', 'bg-amber-500', 'bg-rose-500', 'bg-slate-500']
+    for idx, point in enumerate(monthly_trend[-6:]):
+        chart_bars.append({
+            'height': max(8, round((point['total'] / max_total) * 100, 1)),
+            'color': bar_palette[idx % len(bar_palette)],
+        })
+
+    category_mix = []
+    for idx, item in enumerate(category_data[:5]):
+        total_val = float(item.get('total') or 0)
+        pct = round((total_val / float(month_total)) * 100, 1) if month_total else 0
+        category_mix.append({
+            'name': item.get('category__name') or 'Other',
+            'percent': pct,
+            'color': ['emerald-500', 'cyan-500', 'indigo-500', 'amber-500', 'rose-500'][idx % 5],
+        })
+
+    donut_segments = []
+    circumference = 565
+    offset = 0
+    for mix in category_mix:
+        donut_segments.append({'color': mix['color'], 'offset': offset})
+        offset += (mix['percent'] / 100) * circumference
+
+    top_category_name = category_data[0].get('category__name') if category_data else 'None'
+    previous_month_start = (month_start - timedelta(days=1)).replace(day=1)
+    previous_month_total = (
+        Expense.objects.filter(user=user, date__gte=previous_month_start, date__lt=month_start, is_deleted=False)
+        .aggregate(total=Sum('amount'))['total']
+        or 0
+    )
+    trend_pct = 0
+    if previous_month_total:
+        trend_pct = round(((float(month_total) - float(previous_month_total)) / float(previous_month_total)) * 100, 1)
+
+    recent_shift_qs = Expense.objects.filter(user=user, is_deleted=False).select_related('category')[:6]
+    outflow_shifts = []
+    for expense in recent_shift_qs:
+        cat_name = expense.category.name if expense.category else 'Other'
+        outflow_shifts.append({
+            'icon': 'payments',
+            'name': expense.description or cat_name,
+            'category': cat_name,
+            'date': expense.date.strftime('%d %b'),
+            'type': expense.source.title(),
+            'amount': f"{float(expense.amount):,.2f}",
+            'change': f"{trend_pct:+.1f}% vs last month",
+            'change_color': 'text-emerald-600' if trend_pct <= 0 else 'text-rose-500',
+        })
+
+    total_budget = sum(float(b.monthly_limit) for b in Budget.objects.filter(user=user, is_active=True))
+    savings_target = max(total_budget * 0.25, 1)
+    savings_now = max(total_budget - float(month_total), 0)
+    savings_percent = round((savings_now / savings_target) * 100, 1) if savings_target else 0
+
+    context = {
+        'month_total': month_total,
+        'category_data': category_data,
+        'monthly_trend': monthly_trend,
+        'analytics_headline': f"Spending is {abs(trend_pct):.1f}% {'up' if trend_pct > 0 else 'down'} versus last month.",
+        'efficiency_score': max(0, min(100, int(100 - (float(month_total) / (total_budget or (float(month_total) + 1))) * 100))),
+        'chart_bars': chart_bars,
+        'inflow': f"{max(total_budget, float(month_total)):,.0f}",
+        'outflow': f"{float(month_total):,.0f}",
+        'net_flow': f"{max(total_budget - float(month_total), 0):,.0f}",
+        'donut_segments': donut_segments,
+        'top_category': top_category_name,
+        'category_mix': category_mix,
+        'savings_goal': {
+            'name': 'Quarterly Buffer',
+            'target': f"{savings_target:,.0f}",
+            'percent': min(savings_percent, 100),
+            'months_left': 3,
+        },
+        'alert': {
+            'title': 'Watch Spending',
+            'message': 'One or more categories are above 80% utilization this month.',
+            'cta': 'Review budgets',
+        },
+        'ai_insight': 'Food and transport spending are the strongest drivers this month; reducing each by 8% can materially improve your monthly surplus.',
+        'outflow_shifts': outflow_shifts,
+        'active_page': 'analytics',
+    }
+    return render(request, 'dashboard/analytics.html', context)
+
+
+@login_required
+def transactions(request):
+    """Dedicated transactions page."""
+    if request.method == 'POST':
+        action = request.POST.get('action')
+
+        if action == 'add':
+            category_id = request.POST.get('category')
+            amount = request.POST.get('amount')
+            description = request.POST.get('description', '')
+            date = request.POST.get('date')
+
+            try:
+                category = Category.objects.get(id=category_id, user=request.user)
+                Expense.objects.create(
+                    user=request.user,
+                    category=category,
+                    amount=amount,
+                    description=description,
+                    date=date,
+                    source='web'
+                )
+                messages.success(request, 'Transaction added successfully')
+            except Category.DoesNotExist:
+                messages.error(request, 'Invalid category')
+
+        elif action == 'delete':
+            expense_id = request.POST.get('expense_id')
+            try:
+                expense = Expense.objects.get(id=expense_id, user=request.user)
+                expense.delete()
+                messages.success(request, 'Transaction deleted successfully')
+            except Expense.DoesNotExist:
+                messages.error(request, 'Transaction not found')
+
+        return redirect('dashboard:transactions')
+
+    expenses = (
+        Expense.objects.filter(user=request.user, is_deleted=False)
+        .select_related('category')
+        .order_by('-date', '-created_at')
+    )
+    q = (request.GET.get('q') or '').strip()
+    kind = (request.GET.get('kind') or 'all').lower()
+    if q:
+        expenses = expenses.filter(description__icontains=q)
+    if kind == 'income':
+        expenses = expenses.none()
+    elif kind == 'expenses':
+        expenses = expenses
+
+    tx_rows = []
+    for item in expenses:
+        category_name = item.category.name if item.category else 'Other'
+        tx_rows.append({
+            'id': item.id,
+            'merchant': item.description or category_name,
+            'datetime': f"{item.date.strftime('%d %b %Y')} • {item.created_at.strftime('%I:%M %p')}",
+            'category': category_name,
+            'category_style': 'bg-emerald-100 text-emerald-800',
+            'status': 'Posted',
+            'status_color': 'text-emerald-600',
+            'payment_method': item.source.upper(),
+            'payment_icon': 'account_balance_wallet' if item.source == 'web' else 'chat',
+            'amount': f"{float(item.amount):,.2f}",
+            'is_income': False,
+            'icon': 'payments',
+        })
+
+    paginator = Paginator(tx_rows, 20)
+    page_obj = paginator.get_page(request.GET.get('page'))
+    categories_list = Category.objects.filter(user=request.user, is_active=True).order_by('name')
+
+    context = {
+        'transactions': page_obj,
+        'ledger_subtitle': 'Detailed transaction history with source and status.',
+        'total_outbound': f"{sum(float(e.amount) for e in expenses):,.0f}",
+        'expenses': expenses[:100],
+        'categories': categories_list,
+        'today': timezone.now().date(),
+        'active_page': 'transactions',
+    }
+    return render(request, 'dashboard/transactions.html', context)
+
+
+@login_required
+def budget(request):
+    """Monthly budget page with category-level limits."""
+    if request.method == 'POST':
+        action = request.POST.get('action')
+
+        if action == 'save':
+            category_id = request.POST.get('category')
+            monthly_limit = request.POST.get('monthly_limit')
+
+            try:
+                category = Category.objects.get(id=category_id, user=request.user, is_active=True)
+                budget_obj, _ = Budget.objects.get_or_create(
+                    user=request.user,
+                    category=category,
+                    defaults={'monthly_limit': monthly_limit}
+                )
+                budget_obj.monthly_limit = Decimal(monthly_limit)
+                budget_obj.is_active = True
+                budget_obj.save()
+                messages.success(request, f'Budget saved for {category.name}')
+            except Category.DoesNotExist:
+                messages.error(request, 'Invalid category selected')
+            except Exception:
+                messages.error(request, 'Please enter a valid monthly limit')
+
+        elif action == 'delete':
+            budget_id = request.POST.get('budget_id')
+            try:
+                budget_obj = Budget.objects.get(id=budget_id, user=request.user)
+                budget_obj.is_active = False
+                budget_obj.save(update_fields=['is_active', 'updated_at'])
+                messages.success(request, 'Budget removed successfully')
+            except Budget.DoesNotExist:
+                messages.error(request, 'Budget not found')
+
+        return redirect('dashboard:budget')
+
+    today = timezone.now().date()
+    month_start = today.replace(day=1)
+    month_expenses = Expense.objects.filter(user=request.user, date__gte=month_start, is_deleted=False)
+    spent_by_category = {
+        row['category']: float(row['total'] or 0)
+        for row in month_expenses.values('category').annotate(total=Sum('amount'))
+    }
+
+    active_budgets = (
+        Budget.objects.filter(user=request.user, is_active=True)
+        .select_related('category')
+        .order_by('category__name')
+    )
+
+    budget_rows = []
+    total_limit = 0.0
+    total_spent = 0.0
+    for item in active_budgets:
+        spent = spent_by_category.get(item.category_id, 0.0)
+        limit = float(item.monthly_limit)
+        total_limit += limit
+        total_spent += spent
+        utilization = round((spent / limit) * 100, 1) if limit > 0 else 0
+        budget_rows.append({
+            'id': item.id,
+            'category': item.category,
+            'limit': limit,
+            'spent': spent,
+            'remaining': round(limit - spent, 2),
+            'utilization': utilization,
+        })
+
+    current_month = timezone.now().strftime('%B %Y')
+    budget_cards = []
+    for row in budget_rows:
+        utilization = row['utilization']
+        at_risk = utilization >= 85
+        category_name = row['category'].name if row['category'] else 'Other'
+        budget_cards.append({
+            'id': row['id'],
+            'name': category_name,
+            'description': f"Monthly budget for {category_name.lower()}.",
+            'icon': 'account_balance_wallet',
+            'spent': f"{row['spent']:,.0f}",
+            'limit': f"{row['limit']:,.0f}",
+            'remaining': f"{row['remaining']:,.0f}",
+            'percent': min(utilization, 100),
+            'status': 'At Risk' if at_risk else 'Healthy',
+            'badge_style': 'bg-rose-100 text-rose-700' if at_risk else 'bg-emerald-100 text-emerald-700',
+            'forecast': 'May exceed by month-end' if at_risk else 'On track this month',
+            'at_risk': at_risk,
+        })
+
+    total_remaining = max(total_limit - total_spent, 0)
+
+    context = {
+        'categories': Category.objects.filter(user=request.user, is_active=True).order_by('name'),
+        'budget_rows': budget_rows,
+        'budgets': budget_cards,
+        'current_month': current_month,
+        'total_limit': total_limit,
+        'total_spent': total_spent,
+        'total_remaining': f"{total_remaining:,.0f}",
+        'overall_utilization': round((total_spent / total_limit) * 100, 1) if total_limit > 0 else 0,
+        'savings_forecast': f"{(total_remaining * 3):,.0f}",
+        'efficiency_score': max(0, min(100, int(100 - ((total_spent / total_limit) * 100)))) if total_limit > 0 else 100,
+        'advisor_image_url': 'https://ui-avatars.com/api/?name=AI+Advisor&background=006c49&color=fff',
+        'advisor_quote': 'Your fixed spending looks healthy. Consider reducing variable food and transport budgets by <strong>5-8%</strong> to improve quarterly savings.',
+        'active_page': 'budgets',
+    }
+    return render(request, 'dashboard/budget.html', context)
+
+
+@login_required
+def settings_page(request):
+    """User settings page with profile and preferences."""
+    user = request.user
+    if request.method == 'POST':
+        action = request.POST.get('action')
+
+        if action == 'profile':
+            first_name = (request.POST.get('first_name') or '').strip()
+            last_name = (request.POST.get('last_name') or '').strip()
+            email = (request.POST.get('email') or '').strip()
+            currency = (request.POST.get('currency') or user.currency or 'INR').strip().upper()
+
+            if email and User.objects.exclude(id=user.id).filter(email=email).exists():
+                messages.error(request, 'That email is already in use by another account.')
+            else:
+                user.first_name = first_name
+                user.last_name = last_name
+                if email:
+                    user.email = email
+                user.currency = currency
+                currency_map = {'INR': '₹', 'USD': '$', 'EUR': '€', 'AED': 'AED'}
+                user.currency_symbol = currency_map.get(currency, user.currency_symbol)
+                user.save()
+                messages.success(request, 'Profile settings updated.')
+
+        elif action == 'whatsapp':
+            new_number = normalize_whatsapp_number(request.POST.get('whatsapp_number', ''))
+            if not new_number:
+                messages.error(request, 'Enter a valid WhatsApp number with country code.')
+            else:
+                user.whatsapp_number = new_number
+                user.whatsapp_verified = False
+                user.save(update_fields=['whatsapp_number', 'whatsapp_verified', 'updated_at'])
+                messages.success(request, 'WhatsApp number updated. Please verify again.')
+
+        return redirect('dashboard:settings')
+
+    context = {
+        'settings_section': request.GET.get('section', 'profile'),
+        'user_prefs': {
+            'weekly_digest': True,
+            'privacy_mask': False,
+        },
+        'active_page': 'settings',
+    }
+    return render(request, 'dashboard/settings.html', context)
+
+
+@login_required
+def support(request):
+    """Support redirect placeholder for sidebar link."""
+    messages.info(request, 'Support is available via the contact page.')
+    return redirect('dashboard:contact')
+
+
+@login_required
+def export_transactions_csv(request):
+    """Export user transactions to CSV."""
+    expenses = (
+        Expense.objects.filter(user=request.user, is_deleted=False)
+        .select_related('category')
+        .order_by('-date', '-created_at')
+    )
+
+    response = HttpResponse(content_type='text/csv')
+    response['Content-Disposition'] = 'attachment; filename="transactions.csv"'
+
+    writer = csv.writer(response)
+    writer.writerow(['Date', 'Category', 'Description', 'Amount', 'Source', 'Created At'])
+
+    for item in expenses:
+        writer.writerow([
+            item.date.isoformat(),
+            item.category.name if item.category else 'Other',
+            item.description,
+            str(item.amount),
+            item.source,
+            item.created_at.strftime('%Y-%m-%d %H:%M:%S'),
+        ])
+
+    return response
 
 
 @login_required

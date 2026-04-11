@@ -1,472 +1,155 @@
-{% extends 'dashboard/base.html' %}
-
-{% block title %}Dashboard - XPENSEDIARY{% endblock %}
-
-{% block extra_css %}
-<style>
-    .dashboard-hero {
-        background: linear-gradient(135deg, #0f172a 0%, #111827 45%, #1f2937 100%);
-        color: white;
-        border-radius: 20px;
-        padding: 28px;
-        display: grid;
-        grid-template-columns: 1.6fr 1fr;
-        gap: 20px;
-        align-items: center;
-        margin-bottom: 20px;
-    }
-
-    .dashboard-hero h1 {
-        font-size: 30px;
-        margin-bottom: 8px;
-        letter-spacing: -0.03em;
-    }
-
-    .dashboard-hero p {
-        color: rgba(255, 255, 255, 0.8);
-        line-height: 1.6;
-        max-width: 60ch;
-    }
-
-    .hero-actions {
-        display: flex;
-        gap: 10px;
-        margin-top: 18px;
-        flex-wrap: wrap;
-    }
-
-    .mini-pill-row {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 10px;
-        margin-top: 16px;
-    }
-
-    .mini-pill {
-        padding: 8px 12px;
-        border-radius: 999px;
-        background: rgba(255, 255, 255, 0.08);
-        border: 1px solid rgba(255, 255, 255, 0.12);
-        color: white;
-        font-size: 12px;
-    }
-
-    .overview-grid {
-        display: grid;
-        grid-template-columns: repeat(5, minmax(0, 1fr));
-        gap: 16px;
-        margin-bottom: 20px;
-    }
-
-    .overview-card {
-        background: white;
-        border: 1px solid #e5e7eb;
-        border-radius: 16px;
-        padding: 18px;
-        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
-    }
-
-    .overview-card .label {
-        font-size: 11px;
-        text-transform: uppercase;
-        letter-spacing: 0.08em;
-        color: #6b7280;
-        margin-bottom: 10px;
-        font-weight: 700;
-    }
-
-    .overview-card .value {
-        font-size: 28px;
-        font-weight: 700;
-        letter-spacing: -0.03em;
-        color: #111827;
-    }
-
-    .overview-card .subtext {
-        margin-top: 8px;
-        color: #6b7280;
-        font-size: 13px;
-    }
-
-    .dashboard-grid {
-        display: grid;
-        grid-template-columns: 2fr 1fr;
-        gap: 20px;
-        align-items: start;
-    }
-
-    .receipt-form {
-        display: grid;
-        gap: 14px;
-    }
-
-    .receipt-drop {
-        border: 1.5px dashed #cbd5e1;
-        background: #f8fafc;
-        border-radius: 14px;
-        padding: 20px;
-    }
-
-    .receipt-drop strong {
-        display: block;
-        margin-bottom: 6px;
-        color: #111827;
-    }
-
-    .upload-actions {
-        display: flex;
-        gap: 12px;
-        flex-wrap: wrap;
-    }
-
-    .section-heading {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        gap: 10px;
-        margin-bottom: 16px;
-    }
-
-    .section-heading h2 {
-        font-size: 18px;
-        color: #111827;
-    }
-
-    .stat-badge {
-        display: inline-flex;
-        align-items: center;
-        gap: 6px;
-        border-radius: 999px;
-        padding: 6px 10px;
-        font-size: 12px;
-        background: #f3f4f6;
-        color: #374151;
-        font-weight: 600;
-    }
-
-    .receipt-list {
-        display: grid;
-        gap: 10px;
-    }
-
-    .receipt-item {
-        border: 1px solid #e5e7eb;
-        border-radius: 12px;
-        padding: 12px 14px;
-        background: white;
-    }
-
-    .receipt-item-top {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        gap: 10px;
-        margin-bottom: 8px;
-    }
-
-    .receipt-status {
-        font-size: 11px;
-        font-weight: 700;
-        text-transform: uppercase;
-        letter-spacing: 0.08em;
-    }
-
-    .receipt-status.pending { color: #b45309; }
-    .receipt-status.success { color: #047857; }
-    .receipt-status.failed { color: #b91c1c; }
-
-    .muted-text {
-        color: #6b7280;
-        font-size: 13px;
-    }
-
-    .breakdown-row {
-        display: grid;
-        gap: 12px;
-    }
-
-    .breakdown-item {
-        display: grid;
-        gap: 6px;
-    }
-
-    .breakdown-head {
-        display: flex;
-        justify-content: space-between;
-        gap: 12px;
-        align-items: center;
-        font-size: 13px;
-    }
-
-    .breakdown-bar {
-        height: 10px;
-        border-radius: 999px;
-        background: #eef2f7;
-        overflow: hidden;
-    }
-
-    .breakdown-fill {
-        height: 100%;
-        border-radius: inherit;
-    }
-
-    .quick-actions {
-        display: grid;
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-        gap: 12px;
-    }
-
-    .quick-link {
-        border: 1px solid #e5e7eb;
-        border-radius: 14px;
-        padding: 14px;
-        text-decoration: none;
-        color: #111827;
-        background: #fff;
-        transition: all 0.2s ease;
-    }
-
-    .quick-link:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 10px 24px rgba(0, 0, 0, 0.06);
-    }
-
-    .quick-link strong {
-        display: block;
-        margin-bottom: 4px;
-    }
-
-    @media (max-width: 1100px) {
-        .overview-grid,
-        .dashboard-grid,
-        .dashboard-hero {
-            grid-template-columns: 1fr;
-        }
-    }
-
-    @media (max-width: 720px) {
-        .overview-grid {
-            grid-template-columns: 1fr 1fr;
-        }
-
-        .quick-actions {
-            grid-template-columns: 1fr;
-        }
-    }
-</style>
-{% endblock %}
+{% extends "dashboard/base2.html" %}
+{% block title %}XPENSEDIARY | Dashboard{% endblock %}
+{% block search_placeholder %}Search dashboard...{% endblock %}
 
 {% block content %}
+{# Set active_page — in your view pass: context['active_page'] = 'dashboard' #}
 
-<div class="dashboard-hero">
-    <div>
-        <div class="stat-badge">{{ user.currency_symbol }}{{ month_total|floatformat:2 }} tracked this month</div>
-        <h1>Good to see you, {{ user.first_name|default:user.username }}.</h1>
-        <p>
-            Track WhatsApp expenses, scan receipts with OCR, and keep the whole month under control from one clean dashboard.
-        </p>
-        <div class="hero-actions">
-            {% if not whatsapp_verified %}
-            <a href="{% url 'dashboard:link_whatsapp' %}" class="btn btn-danger">Verify WhatsApp</a>
-            {% else %}
-            <form method="post" action="{% url 'dashboard:send_spend_reminder' %}">
-                {% csrf_token %}
-                <button type="submit" class="btn btn-success">Send WhatsApp Reminder</button>
-            </form>
-            {% endif %}
-            <a href="#receipt-upload" class="btn btn-primary">Upload Receipt</a>
-        </div>
-        <div class="mini-pill-row">
-            <span class="mini-pill">Today's flow: {{ user.currency_symbol }}{{ today_total|floatformat:2 }}</span>
-            <span class="mini-pill">Week: {{ user.currency_symbol }}{{ week_total|floatformat:2 }}</span>
-            <span class="mini-pill">Receipts: {{ receipt_total }}</span>
-        </div>
+<!-- Hero Header -->
+<header class="mb-10 flex flex-col md:flex-row justify-between items-end gap-6">
+  <div>
+    <h1 class="text-slate-400 font-headline font-semibold text-lg mb-1">Good morning, {{ user.first_name }}</h1>
+    <div class="flex items-baseline gap-2">
+      <span class="text-5xl font-black font-headline text-on-surface tracking-tight">${{ monthly_total|floatformat:0 }}</span>
+      <span class="text-2xl font-bold font-headline text-slate-400">.{{ monthly_total_cents }}</span>
     </div>
-    <div class="card" style="margin-bottom: 0; background: rgba(255,255,255,0.06); border-color: rgba(255,255,255,0.12); color: white;">
-        <div class="section-heading" style="margin-bottom: 10px;">
-            <h2 style="color: white;">At a glance</h2>
-            {% if top_category %}
-            <span class="stat-badge" style="background: rgba(255,255,255,0.12); color: white;">Top: {{ top_category.category__icon }} {{ top_category.category__name }}</span>
-            {% endif %}
-        </div>
-        <div style="display: grid; gap: 10px;">
-            <div><strong style="font-size: 28px;">{{ user.currency_symbol }}{{ month_total|floatformat:2 }}</strong><div class="muted-text" style="color: rgba(255,255,255,0.72);">Monthly spend</div></div>
-            <div><strong style="font-size: 20px;">{{ receipt_success }}</strong><div class="muted-text" style="color: rgba(255,255,255,0.72);">Successful receipts</div></div>
-            <div><strong style="font-size: 20px;">{{ receipt_pending }}</strong><div class="muted-text" style="color: rgba(255,255,255,0.72);">Pending receipts</div></div>
-        </div>
+    <p class="text-sm text-slate-500 mt-2 font-medium">Monthly spending updated {{ last_updated }}</p>
+  </div>
+  <div class="flex gap-4">
+    <a href="#receipt-upload" class="px-6 py-3 bg-surface-container-high text-on-surface font-semibold rounded-xl active:scale-95 transition-transform inline-flex items-center">
+      Upload Receipt
+    </a>
+    <a href="{% url 'dashboard:transactions' %}" class="px-6 py-3 custom-gradient text-white font-bold rounded-xl shadow-lg active:scale-95 transition-transform flex items-center gap-2">
+      <span class="material-symbols-outlined">add</span> Add Transaction
+    </a>
+  </div>
+</header>
+
+<!-- Stats Bento Grid -->
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-10">
+  {% for stat in stats_cards %}
+  <div class="bg-surface-container-lowest p-6 rounded-xl border border-outline-variant/15 editorial-shadow">
+    <p class="text-xs font-bold text-slate-500 uppercase tracking-widest mb-4">{{ stat.label }}</p>
+    <div class="text-2xl font-bold font-headline text-on-surface">{{ stat.value }}</div>
+    <div class="flex items-center gap-1 {{ stat.trend_color }} text-xs mt-2 font-bold">
+      <span class="material-symbols-outlined text-sm">{{ stat.trend_icon }}</span> {{ stat.trend_text }}
     </div>
+  </div>
+  {% endfor %}
 </div>
 
-<div class="overview-grid">
-    <div class="overview-card">
-        <div class="label">Today</div>
-        <div class="value">{{ user.currency_symbol }}{{ today_total|floatformat:2 }}</div>
-        <div class="subtext">Spending logged today</div>
-    </div>
-    <div class="overview-card">
-        <div class="label">This Week</div>
-        <div class="value">{{ user.currency_symbol }}{{ week_total|floatformat:2 }}</div>
-        <div class="subtext">Seven-day total</div>
-    </div>
-    <div class="overview-card">
-        <div class="label">This Month</div>
-        <div class="value">{{ user.currency_symbol }}{{ month_total|floatformat:2 }}</div>
-        <div class="subtext">Current month total</div>
-    </div>
-    <div class="overview-card">
-        <div class="label">Receipts</div>
-        <div class="value">{{ receipt_total }}</div>
-        <div class="subtext">Uploaded and processed</div>
-    </div>
-    <div class="overview-card">
-        <div class="label">OCR Health</div>
-        <div class="value">{{ receipt_success }}</div>
-        <div class="subtext">Processed successfully</div>
-    </div>
-</div>
+<!-- Main Grid -->
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
 
-<div class="dashboard-grid">
-    <div style="display: grid; gap: 20px;">
-        <div class="card" id="receipt-upload">
-            <div class="section-heading">
-                <h2>Upload a Receipt</h2>
-                <span class="stat-badge">OCR + AI</span>
-            </div>
-            <p class="muted-text" style="margin-bottom: 16px;">
-                Upload a JPG, PNG, or WEBP receipt and XPENSEDIARY will try to extract the amount and category automatically.
-            </p>
-            <form class="receipt-form" method="post" action="{% url 'dashboard:upload_receipt' %}" enctype="multipart/form-data">
-                {% csrf_token %}
-                <div class="receipt-drop">
-                    <strong>Choose receipt image</strong>
-                    <p class="muted-text" style="margin-bottom: 12px;">Max file size: 5MB</p>
-                    <input type="file" name="image" accept="image/jpeg,image/png,image/webp" required>
+  <!-- Left: Upload + Recent Activity -->
+  <div class="lg:col-span-2 space-y-8">
+
+    <!-- Drop Zone -->
+    <section id="receipt-upload" class="bg-surface-container-low rounded-xl p-8 border-2 border-dashed border-outline-variant/30 text-center flex flex-col items-center justify-center min-h-[240px] group hover:border-primary/40 transition-colors">
+      <div class="w-16 h-16 rounded-full bg-white flex items-center justify-center text-primary mb-4 editorial-shadow group-hover:scale-110 transition-transform">
+        <span class="material-symbols-outlined text-3xl">cloud_upload</span>
+      </div>
+      <h3 class="text-lg font-bold font-headline mb-2">Drop receipts here to scan</h3>
+      <p class="text-sm text-slate-500 max-w-xs mx-auto">Instant OCR processing for merchant, date, and amount extraction.</p>
+      <form method="post" action="{% url 'dashboard:upload_receipt' %}" enctype="multipart/form-data" class="mt-6 flex flex-col items-center gap-3">
+        {% csrf_token %}
+        <input type="file" name="image" accept="image/jpeg,image/png,image/webp" required class="text-xs"/>
+        <button type="submit" class="px-6 py-2 bg-white text-on-surface border border-outline-variant/30 rounded-lg text-sm font-bold shadow-sm hover:bg-slate-50 transition-colors">Process Receipt</button>
+      </form>
+    </section>
+
+    <!-- Recent Activity -->
+    <section>
+      <div class="flex justify-between items-center mb-6">
+        <h2 class="text-xl font-bold font-headline">Recent Activity</h2>
+        <a href="{% url 'dashboard:transactions' %}" class="text-sm font-bold text-primary hover:underline">View All</a>
+      </div>
+      <div class="bg-surface-container-lowest rounded-xl border border-outline-variant/15 editorial-shadow overflow-hidden">
+        <table class="w-full text-left">
+          <thead class="bg-surface-container-low/50">
+            <tr>
+              <th class="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-widest">Merchant</th>
+              <th class="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-widest">Category</th>
+              <th class="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-widest">Date</th>
+              <th class="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-widest text-right">Amount</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-surface-container-low">
+            {% for txn in recent_transactions %}
+            <tr class="hover:bg-surface-container-low/30 transition-colors cursor-pointer">
+              <td class="px-6 py-4">
+                <div class="flex items-center gap-3">
+                  <div class="w-8 h-8 rounded bg-slate-100 flex items-center justify-center text-slate-600">
+                    <span class="material-symbols-outlined text-sm">{{ txn.icon }}</span>
+                  </div>
+                  <span class="font-semibold text-on-surface">{{ txn.merchant }}</span>
                 </div>
-                <div class="upload-actions">
-                    <button type="submit" class="btn btn-primary">Process Receipt</button>
-                    <a href="{% url 'dashboard:expenses' %}" class="btn btn-success">Review Expenses</a>
-                </div>
-            </form>
-        </div>
+              </td>
+              <td class="px-6 py-4">
+                <span class="px-2.5 py-1 bg-emerald-100 text-emerald-800 text-[10px] font-bold rounded-full uppercase">{{ txn.category }}</span>
+              </td>
+              <td class="px-6 py-4 text-sm text-slate-500 font-medium">{{ txn.date }}</td>
+              <td class="px-6 py-4 text-right font-bold text-on-surface">-${{ txn.amount }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </div>
 
-        <div class="card">
-            <div class="section-heading">
-                <h2>Category Breakdown</h2>
-                <span class="stat-badge">This month</span>
-            </div>
-            {% if category_data %}
-            <div class="breakdown-row">
-                {% for item in category_data %}
-                <div class="breakdown-item">
-                    <div class="breakdown-head">
-                        <span>{{ item.category__icon }} {{ item.category__name }}</span>
-                        <strong>{{ user.currency_symbol }}{{ item.total|floatformat:2 }} <span class="muted-text">({{ item.percentage }}%)</span></strong>
-                    </div>
-                    <div class="breakdown-bar">
-                        <div class="breakdown-fill" style="width: {{ item.percentage }}%; background: {{ item.category__color }};"></div>
-                    </div>
-                </div>
-                {% endfor %}
-            </div>
-            {% else %}
-            <p style="color: #999; text-align: center; padding: 40px 0;">No expenses recorded yet</p>
-            {% endif %}
-        </div>
+  <!-- Right Sidebar Widgets -->
+  <div class="space-y-8">
 
-        <div class="card">
-            <div class="section-heading">
-                <h2>Recent Expenses</h2>
-                <span class="stat-badge">Latest 10</span>
-            </div>
-            {% if recent_expenses %}
-            <table>
-                <thead>
-                    <tr>
-                        <th>Date</th>
-                        <th>Category</th>
-                        <th>Amount</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for expense in recent_expenses %}
-                    <tr>
-                        <td>{{ expense.date|date:"M d, Y" }}</td>
-                        <td>{{ expense.category.icon }} {{ expense.category.name }}</td>
-                        <td><strong>{{ user.currency_symbol }}{{ expense.amount }}</strong></td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-            {% else %}
-            <p style="color: #999; text-align: center; padding: 40px 0;">No expenses recorded yet</p>
-            {% endif %}
+    <!-- Category Breakdown -->
+    <section class="bg-surface-container-lowest p-6 rounded-xl border border-outline-variant/15 editorial-shadow">
+      <h2 class="text-lg font-bold font-headline mb-6">Category Breakdown</h2>
+      <div class="space-y-5">
+        {% for cat in category_breakdown %}
+        <div>
+          <div class="flex justify-between text-sm mb-2">
+            <span class="font-bold">{{ cat.name }}</span>
+            <span class="text-slate-500">${{ cat.spent }} / ${{ cat.limit }}</span>
+          </div>
+          <div class="w-full bg-surface-container-low h-2 rounded-full overflow-hidden">
+            <div class="bg-{{ cat.color }} h-full rounded-full" style="width: {{ cat.percent }}%;"></div>
+          </div>
         </div>
-    </div>
+        {% endfor %}
+      </div>
+    </section>
 
-    <div style="display: grid; gap: 20px;">
-        <div class="card">
-            <div class="section-heading">
-                <h2>Receipt Activity</h2>
-                <span class="stat-badge">{{ receipt_pending }} pending</span>
+    <!-- Receipt Status -->
+    <section class="bg-surface-container-lowest p-6 rounded-xl border border-outline-variant/15 editorial-shadow">
+      <h2 class="text-lg font-bold font-headline mb-4">Receipt Status</h2>
+      <div class="space-y-4">
+        {% for receipt in receipt_statuses %}
+        <div class="flex items-center justify-between p-3 bg-surface-container-low rounded-lg">
+          <div class="flex items-center gap-3">
+            <div class="w-2 h-2 rounded-full bg-{{ receipt.status_color }}"></div>
+            <div class="text-xs">
+              <p class="font-bold">{{ receipt.filename }}</p>
+              <p class="text-slate-500">{{ receipt.status_text }}</p>
             </div>
-            {% if recent_receipts %}
-            <div class="receipt-list">
-                {% for receipt in recent_receipts %}
-                <div class="receipt-item">
-                    <div class="receipt-item-top">
-                        <strong>#{{ receipt.id }}</strong>
-                        <span class="receipt-status {{ receipt.processing_status }}">{{ receipt.processing_status }}</span>
-                    </div>
-                    <div class="muted-text">{{ receipt.created_at|date:"M d, Y H:i" }}</div>
-                    {% if receipt.extracted_text %}
-                    <div class="muted-text" style="margin-top: 8px;">{{ receipt.extracted_text|truncatechars:90 }}</div>
-                    {% endif %}
-                </div>
-                {% endfor %}
-            </div>
-            {% else %}
-            <p style="color: #999; text-align: center; padding: 40px 0;">No receipts uploaded yet</p>
-            {% endif %}
+          </div>
+          <span class="material-symbols-outlined text-{{ receipt.icon_color }} text-sm" {% if receipt.fill %}style="font-variation-settings: 'FILL' 1;"{% endif %}>{{ receipt.icon }}</span>
         </div>
+        {% endfor %}
+      </div>
+    </section>
 
-        <div class="card">
-            <div class="section-heading">
-                <h2>Quick Actions</h2>
-            </div>
-            <div class="quick-actions">
-                <a class="quick-link" href="{% url 'dashboard:expenses' %}">
-                    <strong>Manage expenses</strong>
-                    <span class="muted-text">Review, edit, and delete entries</span>
-                </a>
-                <a class="quick-link" href="{% url 'dashboard:categories' %}">
-                    <strong>Categories</strong>
-                    <span class="muted-text">Tune your spending buckets</span>
-                </a>
-                <a class="quick-link" href="{% url 'dashboard:link_whatsapp' %}">
-                    <strong>WhatsApp link</strong>
-                    <span class="muted-text">Connect or re-verify your number</span>
-                </a>
-                <form method="post" action="{% url 'dashboard:send_spend_reminder' %}" style="margin: 0;">
-                    {% csrf_token %}
-                    <button type="submit" class="quick-link" style="width: 100%; text-align: left; cursor: pointer;">
-                        <strong>WhatsApp reminder</strong>
-                        <span class="muted-text">Send yourself a reminder message</span>
-                    </button>
-                </form>
-            </div>
-        </div>
+    <!-- Promo Card -->
+    <section class="bg-primary-container p-6 rounded-xl relative overflow-hidden">
+      <div class="relative z-10 text-on-primary-container">
+        <h3 class="font-bold font-headline text-lg mb-2">Master Your Wealth</h3>
+        <p class="text-sm opacity-90 mb-6">Learn how to automate your expenses with our latest tutorial.</p>
+        <button class="bg-white text-primary px-4 py-2 rounded-lg text-sm font-black shadow-md hover:shadow-lg transition-shadow">Start Guide</button>
+      </div>
+      <div class="absolute -right-4 -bottom-4 opacity-10">
+        <span class="material-symbols-outlined text-[120px]" style="font-variation-settings: 'FILL' 1;">school</span>
+      </div>
+    </section>
 
-        <div class="card">
-            <div class="section-heading">
-                <h2>Quick Start Guide</h2>
-            </div>
-            <ol style="padding-left: 20px; line-height: 1.8; color: #374151;">
-                <li>Send a message to WhatsApp like "120 petrol"</li>
-                <li>Upload bills or receipts from the dashboard</li>
-                <li>Type "today" or "summary" in WhatsApp for instant reports</li>
-                <li>Use categories to keep your data clean and searchable</li>
-            </ol>
-        </div>
-    </div>
+  </div>
 </div>
 {% endblock %}

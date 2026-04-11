@@ -102,10 +102,10 @@
 
         <div class="hidden md:flex items-center gap-8 font-['Inter'] tracking-tight font-semibold">
             {% if user.is_authenticated %}
-            <a class="text-blue-900 dark:text-blue-400 border-b-2 border-blue-900 dark:border-blue-400 pb-1" href="{% url 'dashboard:dashboard' %}">Dashboard</a>
-            <a class="text-slate-500 dark:text-slate-400 hover:text-blue-900 dark:hover:text-blue-200 transition-colors" href="{% url 'dashboard:dashboard' %}#analytics">Analytics</a>
-            <a class="text-slate-500 dark:text-slate-400 hover:text-blue-900 dark:hover:text-blue-200 transition-colors" href="{% url 'dashboard:expenses' %}">Payments</a>
-            <a class="text-slate-500 dark:text-slate-400 hover:text-blue-900 dark:hover:text-blue-200 transition-colors" href="{% url 'dashboard:categories' %}">Settings</a>
+            <a class="{% if request.resolver_match.url_name == 'dashboard' %}text-blue-900 dark:text-blue-400 border-b-2 border-blue-900 dark:border-blue-400 pb-1{% else %}text-slate-500 dark:text-slate-400 hover:text-blue-900 dark:hover:text-blue-200 transition-colors{% endif %}" href="{% url 'dashboard:dashboard' %}">Dashboard</a>
+            <a class="{% if request.resolver_match.url_name == 'analytics' %}text-blue-900 dark:text-blue-400 border-b-2 border-blue-900 dark:border-blue-400 pb-1{% else %}text-slate-500 dark:text-slate-400 hover:text-blue-900 dark:hover:text-blue-200 transition-colors{% endif %}" href="{% url 'dashboard:analytics' %}">Analytics</a>
+            <a class="{% if request.resolver_match.url_name == 'transactions' or request.resolver_match.url_name == 'expenses' %}text-blue-900 dark:text-blue-400 border-b-2 border-blue-900 dark:border-blue-400 pb-1{% else %}text-slate-500 dark:text-slate-400 hover:text-blue-900 dark:hover:text-blue-200 transition-colors{% endif %}" href="{% url 'dashboard:transactions' %}">Transactions</a>
+            <a class="{% if request.resolver_match.url_name == 'budget' %}text-blue-900 dark:text-blue-400 border-b-2 border-blue-900 dark:border-blue-400 pb-1{% else %}text-slate-500 dark:text-slate-400 hover:text-blue-900 dark:hover:text-blue-200 transition-colors{% endif %}" href="{% url 'dashboard:budget' %}">Budget</a>
             {% if not user.whatsapp_verified %}
             <a class="text-red-500 font-bold" href="{% url 'dashboard:link_whatsapp' %}">Link WhatsApp</a>
             {% endif %}
