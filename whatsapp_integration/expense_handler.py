@@ -12,6 +12,18 @@ from users.services import generate_otp_for_user
 logger = logging.getLogger(__name__)
 
 
+def parse_receipt_image(image_path: str, user):
+    from .receipt_processor import parse_receipt_image as _parse_receipt_image
+
+    return _parse_receipt_image(image_path, user)
+
+
+def process_receipt_image(image_path: str, user):
+    from .receipt_processor import process_receipt as _process_receipt
+
+    return _process_receipt(image_path, user)
+
+
 class ExpenseParser:
     """
     Parse natural language expense messages from WhatsApp using a 3-tier

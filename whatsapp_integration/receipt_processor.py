@@ -1,126 +1,336 @@
 import hashlib
+import json
 import logging
-import re
+import mimetypes
+import os
 
+import google.genai as genai
 from django.core.cache import cache
+from django.conf import settings
 
 from expenses.models import Category, Expense
-
-from .ai_categorization_service import categorize_with_ai
-from .exceptions import AmountNotFoundException, AICategoriaztionException, OCRException
-from .google_vision_service import extract_text_from_image
 
 logger = logging.getLogger(__name__)
 
 
-CATEGORY_KEYWORDS = {
-    'Food': ['pizza', 'restaurant', 'cafe', 'swiggy', 'zomato', 'dominos', 'burger', 'biryani'],
-    'Transport': ['petrol', 'fuel', 'uber', 'ola', 'rapido', 'diesel', 'cab'],
-    'Shopping': ['amazon', 'flipkart', 'myntra', 'meesho', 'mall', 'supermarket'],
-    'Bills': ['electricity', 'recharge', 'rent', 'wifi', 'broadband', 'insurance'],
+FALLBACK_EXPENSE = {
+    'amount': 0,
+    'category': 'Other',
+    'description': 'Unable to parse',
 }
 
-TOTAL_KEYWORDS = ['total', 'amount due', 'grand total', 'net payable', 'to pay']
+ALLOWED_CATEGORIES = {
+    'food': 'Food',
+    'travel': 'Travel',
+    'groceries': 'Groceries',
+    'shopping': 'Shopping',
+    'bills': 'Bills',
+    'entertainment': 'Entertainment',
+    'other': 'Other',
+}
+
+FUZZY_MAP = {
+    'restaurant': 'Food',
+    'cafe': 'Food',
+    'pizza': 'Food',
+    'uber': 'Travel',
+    'ola': 'Travel',
+    'taxi': 'Travel',
+    'bus': 'Travel',
+    'movie': 'Entertainment',
+    'netflix': 'Entertainment',
+}
 
 
-def _normalize_number(value):
-    return value.replace(',', '').replace('₹', '').strip()
+def _get_api_key():
+    return getattr(settings, 'GEMINI_API_KEY', '') or os.environ.get('GEMINI_API_KEY', '')
+
+
+def _strip_markdown(content: str) -> str:
+    text = (content or '').strip()
+    if text.startswith('```'):
+        lines = text.splitlines()
+        if lines and lines[0].strip().startswith('```'):
+            lines = lines[1:]
+        if lines and lines[-1].strip().startswith('```'):
+            lines = lines[:-1]
+        text = '\n'.join(lines).strip()
+        if text.lower().startswith('json'):
+            text = text[4:].strip()
+    return text
+
+
+def _extract_json_payload(content: str) -> str:
+    text = _strip_markdown(content)
+    start = text.find('{')
+    end = text.rfind('}')
+    if start != -1 and end != -1 and end > start:
+        return text[start:end + 1]
+    return text
+
+
+def _parse_expense_payload(content: str) -> dict:
+    payload = json.loads(_extract_json_payload(content))
+    amount = payload.get('amount', 0)
+    category = str(payload.get('category', 'Other')).strip() or 'Other'
+    description = str(payload.get('description', 'Unable to parse')).strip() or 'Unable to parse'
+
+    try:
+        amount = float(amount)
+    except (TypeError, ValueError):
+        amount = 0
+
+    if amount < 0:
+        amount = 0
+
+    return {
+        'amount': amount,
+        'category': category,
+        'description': description,
+    }
+
+
+def _normalize_category_name(category_name: str) -> str:
+    normalized = (category_name or '').strip()
+    if not normalized:
+        return 'Other'
+    normalized_lower = normalized.lower()
+    for keyword, mapped_category in FUZZY_MAP.items():
+        if keyword in normalized_lower:
+            return mapped_category
+    return ALLOWED_CATEGORIES.get(normalized_lower, 'Other')
+
+
+def _calculate_confidence(parsed_data: dict) -> float:
+    amount = parsed_data.get('amount') or 0
+    category = str(parsed_data.get('category') or '').strip()
+    description = str(parsed_data.get('description') or '').strip()
+
+    confidence = 1.0
+    if amount == 0:
+        return 0.0
+    if len(description) < 5:
+        confidence -= 0.3
+    if category == 'Other':
+        confidence -= 0.2
+    if amount < 10:
+        confidence -= 0.2
+
+    if confidence < 0:
+        return 0.0
+    if confidence > 1:
+        return 1.0
+    return confidence
 
 
 def _clean_description(text):
-    cleaned = re.sub(r'\s+', ' ', text or '').strip()
+    cleaned = ' '.join((text or '').split()).strip()
     return cleaned[:100]
 
 
-def _get_cache_key(image_path):
-    return hashlib.md5(image_path.encode('utf-8')).hexdigest()
+def _get_cache_key(image_data: bytes):
+    return f"receipt:{hashlib.md5(image_data).hexdigest()}"
 
 
-def extract_amount(text: str):
-    """Extract an amount using receipt heuristics."""
-    if not text:
-        return None
-
-    number_pattern = r'(?:₹\s*)?(\d{1,3}(?:,\d{3})*(?:\.\d{1,2})?|\d+(?:\.\d{1,2})?)'
-    lower_text = text.lower()
-
-    for keyword in TOTAL_KEYWORDS:
-        pattern_after = rf'{re.escape(keyword)}[^\d₹]{{0,30}}{number_pattern}'
-        match_after = re.search(pattern_after, lower_text, re.IGNORECASE)
-        if match_after:
-            return float(_normalize_number(match_after.group(1)))
-
-        pattern_before = rf'{number_pattern}[^\d\w]{{0,30}}{re.escape(keyword)}'
-        match_before = re.search(pattern_before, lower_text, re.IGNORECASE)
-        if match_before:
-            return float(_normalize_number(match_before.group(1)))
-
-    matches = re.findall(number_pattern, text)
-    if not matches:
-        return None
-
-    numbers = [float(_normalize_number(match)) for match in matches]
-    return max(numbers) if numbers else None
-
-
-def rule_based_category(text: str):
-    """Return a category name and whether the match is high confidence."""
-    if not text:
-        return 'Other', False
-
-    lower_text = text.lower()
-    for category_name, keywords in CATEGORY_KEYWORDS.items():
-        for keyword in keywords:
-            if re.search(r'\b' + re.escape(keyword) + r'\b', lower_text):
-                return category_name, True
-
-    return 'Other', False
-
-
-def _get_or_create_category(user, category_name):
-    category_name = (category_name or 'Other').strip() or 'Other'
-    category = Category.objects.filter(user=user, name__iexact=category_name, is_active=True).first()
+def _get_existing_or_other_category(user, category_name):
+    normalized_name = _normalize_category_name(category_name)
+    category = Category.objects.filter(user=user, name__iexact=normalized_name, is_active=True).first()
     if category:
         return category
 
+    other_category = Category.objects.filter(user=user, name__iexact='Other', is_active=True).first()
+    if other_category:
+        return other_category
+
     return Category.objects.create(
         user=user,
-        name=category_name.title(),
+        name='Other',
         icon='💰',
         is_active=True,
     )
 
 
+def _read_image_data(image_path: str) -> bytes:
+    try:
+        with open(image_path, 'rb') as image_file:
+            return image_file.read()
+    except OSError as exc:
+        raise ValueError(f'Unable to read receipt image: {image_path}') from exc
+
+
+def parse_receipt_image(image_path: str, user, image_data: bytes = None):
+    api_key = _get_api_key()
+    if not api_key:
+        logger.warning('GEMINI_API_KEY is not set; receipt parsing skipped')
+        return dict(FALLBACK_EXPENSE)
+
+    if not image_path or not os.path.exists(image_path):
+        logger.error('Receipt image file not found: %s', image_path)
+        return dict(FALLBACK_EXPENSE)
+
+    mime_type, _ = mimetypes.guess_type(image_path)
+    mime_type = mime_type or 'image/jpeg'
+    image_data = image_data if image_data is not None else _read_image_data(image_path)
+
+    primary_prompt = """Extract expense details from this receipt image.
+
+Return ONLY valid JSON:
+{
+"amount": number,
+"category": "string",
+"description": "string"
+}
+
+Strict Rules:
+
+* Always extract the FINAL TOTAL (look for "Total", "Grand Total", "Amount Paid")
+* Ignore subtotal, taxes, discounts if final total exists
+* If multiple totals exist, choose the largest final payable amount
+* Category must be one of: Food, Travel, Groceries, Shopping, Bills, Entertainment, Other
+* Match category to the closest logical type
+* Description must include merchant name + short context (e.g. "Dominos pizza", "Uber ride")
+
+If uncertain:
+{
+"amount": 0,
+"category": "Other",
+"description": "Unable to parse"
+}
+"""
+
+    retry_prompt = """Extract ONLY the FINAL payable amount and category from this receipt.
+
+Return STRICT JSON ONLY:
+{
+"amount": number,
+"category": "string",
+"description": "string"
+}
+
+Rules:
+
+* Focus only on final amount
+* Ignore all other numbers
+* Category must be one of: Food, Travel, Groceries, Shopping, Bills, Entertainment, Other
+* If unsure, return fallback JSON
+"""
+
+    client = genai.Client(api_key=api_key)
+    prompts = [primary_prompt, retry_prompt]
+
+    for attempt, prompt in enumerate(prompts, start=1):
+        try:
+            response = client.models.generate_content(
+                model='gemini-2.5-flash',
+                contents=[
+                    {
+                        'role': 'user',
+                        'parts': [
+                            {
+                                'text': prompt
+                            },
+                            {
+                                'inline_data': {
+                                    'mime_type': mime_type,
+                                    'data': image_data,
+                                }
+                            },
+                        ],
+                    }
+                ],
+                config={
+                    'temperature': 0,
+                    'response_mime_type': 'application/json',
+                },
+            )
+
+            response_text = (getattr(response, 'text', '') or '').strip()
+            logger.info(
+                'Gemini receipt parse returned %d characters for %s (attempt %d)',
+                len(response_text),
+                image_path,
+                attempt,
+            )
+
+            if not response_text:
+                logger.warning('Gemini returned an empty receipt response for %s (attempt %d)', image_path, attempt)
+                if attempt < len(prompts):
+                    continue
+                return dict(FALLBACK_EXPENSE)
+
+            try:
+                parsed = _parse_expense_payload(response_text)
+            except (json.JSONDecodeError, TypeError, ValueError) as exc:
+                logger.warning('Failed to parse Gemini receipt response for %s: %s (attempt %d)', image_path, exc, attempt)
+                if attempt < len(prompts):
+                    continue
+                return dict(FALLBACK_EXPENSE)
+
+            parsed['category'] = _normalize_category_name(parsed.get('category'))
+            parsed['confidence'] = _calculate_confidence(parsed)
+
+            if parsed['confidence'] < 0.5:
+                logger.warning('Low confidence receipt parse for %s: %.2f', image_path, parsed['confidence'])
+                if attempt < len(prompts):
+                    continue
+                return dict(FALLBACK_EXPENSE)
+
+            logger.info(
+                'Gemini receipt parse success for %s: amount=%s category=%s confidence=%.2f',
+                image_path,
+                parsed.get('amount'),
+                parsed.get('category'),
+                parsed.get('confidence', 0.0),
+            )
+            return parsed
+
+        except Exception as exc:
+            err = str(exc).lower()
+            if '429' in err or 'quota' in err or 'resource_exhausted' in err:
+                logger.warning('Gemini receipt parse quota/rate limit for %s: %s', image_path, exc)
+                if attempt < len(prompts):
+                    continue
+                return dict(FALLBACK_EXPENSE)
+            logger.error('Gemini receipt parse failed for %s: %s (attempt %d)', image_path, exc, attempt, exc_info=True)
+            if attempt < len(prompts):
+                continue
+            return dict(FALLBACK_EXPENSE)
+
+    return dict(FALLBACK_EXPENSE)
+
+
 def process_receipt(image_path: str, user) -> Expense:
-    """Full OCR + categorization pipeline for a receipt image."""
-    cache_key = _get_cache_key(image_path)
+    """Parse a receipt image with Gemini and create the expense."""
+    if not image_path or not os.path.exists(image_path):
+        raise ValueError('Receipt image file not found')
+
+    image_data = _read_image_data(image_path)
+    cache_key = _get_cache_key(image_data)
     cached = cache.get(cache_key)
     if cached and cached.get('expense_id'):
         existing_expense = Expense.objects.filter(id=cached['expense_id'], user=user).select_related('category').first()
         if existing_expense:
             return existing_expense
 
-    text = (extract_text_from_image(image_path) or '').strip()
-    if not text:
-        raise OCRException('No readable text found in receipt')
+    parsed = parse_receipt_image(image_path, user, image_data=image_data)
+    if not parsed:
+        raise ValueError('Unable to parse receipt image')
 
-    amount = extract_amount(text)
-    if amount is None:
-        raise AmountNotFoundException('No bill amount found in receipt text')
+    try:
+        amount = float(parsed.get('amount') or 0)
+    except (TypeError, ValueError):
+        amount = 0
 
-    category_name, is_confident = rule_based_category(text)
-    description = _clean_description(text)
+    category_name = parsed.get('category') or 'Other'
+    description = _clean_description(parsed.get('description') or '') or 'Unable to parse'
 
-    if not is_confident:
-        category_names = list(
-            Category.objects.filter(user=user, is_active=True).values_list('name', flat=True)
-        )
-        ai_result = categorize_with_ai(text, category_names=category_names)
-        amount = ai_result.get('amount') or amount
-        category_name = ai_result.get('category') or category_name
-        description = ai_result.get('description') or description
+    if amount <= 0:
+        raise ValueError('No bill amount found in receipt image')
 
-    category = _get_or_create_category(user, category_name)
+    if amount < 5:
+        raise ValueError('Suspiciously low amount detected in receipt image')
+
+    category = _get_existing_or_other_category(user, category_name)
 
     expense = Expense.objects.create(
         user=user,
@@ -134,8 +344,8 @@ def process_receipt(image_path: str, user) -> Expense:
         cache_key,
         {
             'expense_id': expense.id,
-            'extracted_text': text,
-            'raw_ocr_response': {},
+            'extracted_text': '',
+            'raw_ocr_response': parsed,
             'amount': float(expense.amount),
             'category': expense.category.name,
             'description': expense.description,

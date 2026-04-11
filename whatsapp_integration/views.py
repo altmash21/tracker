@@ -13,7 +13,6 @@ from users.services import get_or_create_whatsapp_user
 from .exceptions import AICategoriaztionException, AmountNotFoundException, OCRException
 from .ai_categorization_service import categorize_with_ai
 from .expense_handler import ExpenseParser, StatementGenerator, handle_login_command
-from .google_vision_service import extract_text_from_image
 from .receipt_processor import process_receipt
 from .whatsapp_service import WhatsAppService
 
@@ -146,67 +145,25 @@ def process_message(message):
                 )
                 return
 
-            extracted_text = extract_text_from_image(image_path)
-            if not extracted_text:
-                whatsapp_service.send_message(
-                    from_number,
-                    with_techspark_footer(
-                        "📷 Couldn't read this receipt clearly.\n"
-                        "Try sending as text: 120 food"
-                    )
-                )
-                return
-
             try:
-                category_names = list(
-                    Category.objects.filter(user=user, is_active=True).values_list('name', flat=True)
-                )
-                ai_result = categorize_with_ai(extracted_text, category_names=category_names)
-
-                amount = ai_result.get('amount')
-                category_name = ai_result.get('category')
-                description = (ai_result.get('description') or '').strip() or 'Receipt expense'
-
-                category = Category.objects.filter(
-                    user=user,
-                    name__iexact=category_name,
-                    is_active=True,
-                ).first()
-
-                if not amount or float(amount) <= 0 or not category:
-                    whatsapp_service.send_message(
-                        from_number,
-                        with_techspark_footer(
-                            "📷 Couldn't read this receipt clearly.\n"
-                            "Try sending as text: 120 food"
-                        )
-                    )
-                    return
-
-                expense = Expense.objects.create(
-                    user=user,
-                    category=category,
-                    amount=amount,
-                    description=description,
-                    source='ocr',
-                )
+                expense = process_receipt(image_path, user)
 
                 whatsapp_service.send_message(
                     from_number,
                     with_techspark_footer(
                         "✅ Receipt scanned!\n"
                         f"💰 Amount: {user.currency_symbol}{expense.amount}\n"
-                        f"📂 Category: {category.icon} {category.name}\n"
+                        f"📂 Category: {expense.category.icon} {expense.category.name}\n"
                         f"📝 {expense.description}"
                     )
                 )
             except Exception:
-                logger.exception('Failed processing receipt with Gemini flow')
+                logger.exception('Failed processing receipt with Gemini image parser')
                 whatsapp_service.send_message(
                     from_number,
                     with_techspark_footer(
                         "📷 Couldn't read this receipt clearly.\n"
-                        "Try sending as text: 120 food"
+                        "Try sending a clearer image."
                     )
                 )
             return
