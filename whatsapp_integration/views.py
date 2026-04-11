@@ -80,28 +80,43 @@ def verify_webhook(request):
 
 def handle_webhook(request):
     try:
-        body = request.body.decode('utf-8')
-        logger.info('Raw webhook body: %s', body)
+        data = json.loads(request.body)
 
-        data = json.loads(body)
-        if 'entry' not in data:
-            logger.info('No entry in webhook payload')
-            return JsonResponse({'status': 'no_entry'}, status=200)
+        entry = data.get('entry', [])
+        if not entry:
+            return HttpResponse(status=200)
 
-        for entry in data['entry']:
-            for change in entry.get('changes', []):
-                value = change.get('value', {})
-                for message in value.get('messages', []):
-                    process_message(message)
+        changes = entry[0].get('changes', [])
+        if not changes:
+            return HttpResponse(status=200)
 
-        return JsonResponse({'status': 'success'}, status=200)
+        value = changes[0].get('value', {})
+
+        if 'messages' not in value:
+            return HttpResponse(status=200)
+
+        messages = value.get('messages', [])
+        if not messages:
+            return HttpResponse(status=200)
+
+        message = messages[0]
+        if message.get('type') != 'text':
+            return HttpResponse(status=200)
+
+        message_text = message.get('text', {}).get('body', '').strip()
+        if not message_text:
+            return HttpResponse(status=200)
+
+        logger.info('Processing user message: %s', message_text)
+        process_message(message)
+        return HttpResponse(status=200)
 
     except json.JSONDecodeError:
         logger.error('Invalid JSON payload')
-        return JsonResponse({'status': 'invalid_json'}, status=200)
+        return HttpResponse(status=200)
     except Exception:
         logger.exception('Unhandled webhook error')
-        return JsonResponse({'status': 'error'}, status=200)
+        return HttpResponse(status=200)
 
 
 def process_message(message):
